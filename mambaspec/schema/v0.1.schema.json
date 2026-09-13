@@ -61,7 +61,8 @@
       "properties": {
         "language": { "type": "string" },
         "density": { "$ref": "#/$defs/unitInterval" },
-        "repetition": { "$ref": "#/$defs/unitInterval" }
+        "repetition": { "$ref": "#/$defs/unitInterval" },
+        "lyrics": { "type": ["string", "null"] }
       },
       "additionalProperties": false
     },
