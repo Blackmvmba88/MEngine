@@ -35,7 +35,11 @@ class AceStepAPIBackend(GeneratorBackend):
         timeout: float = 600.0,
         thinking: bool = True,
     ) -> None:
-        self.base_url = (base_url or os.environ.get("MENGINE_ACESTEP_URL") or "http://127.0.0.1:8001").rstrip("/") + "/"
+        self.base_url = (
+            base_url
+            or os.environ.get("MENGINE_ACESTEP_URL")
+            or "http://127.0.0.1:8001"
+        ).rstrip("/") + "/"
         self.api_key = api_key or os.environ.get("MENGINE_ACESTEP_API_KEY")
         self.model = model or os.environ.get("MENGINE_ACESTEP_MODEL")
         self.poll_interval = poll_interval
@@ -61,10 +65,8 @@ class AceStepAPIBackend(GeneratorBackend):
         descriptors = [str(style), *(str(item) for item in secondary)]
         descriptors = [item.strip() for item in descriptors if item.strip()]
         prompt = ", ".join(descriptors) or "instrumental music"
+        lyrics = spec.vocals.lyrics.strip() if spec.vocals.lyrics else "[inst]"
 
-        # MambaSpec v0.1 does not yet carry full lyrics. Instrumental is therefore
-        # explicit rather than allowing an upstream model to invent words silently.
-        lyrics = "[inst]"
         key_scale = ""
         if spec.song.key:
             key_scale = spec.song.key
@@ -95,7 +97,9 @@ class AceStepAPIBackend(GeneratorBackend):
         if not self.supports(str(spec.style.get("primary", ""))):
             raise AceStepError("ACE-Step backend requires a non-empty primary style")
 
-        release = self._request_json("POST", "release_task", self.build_payload(spec, seed=seed))
+        release = self._request_json(
+            "POST", "release_task", self.build_payload(spec, seed=seed)
+        )
         data = release.get("data") or {}
         task_id = data.get("task_id")
         if not task_id:
@@ -112,7 +116,9 @@ class AceStepAPIBackend(GeneratorBackend):
     def _wait_for_audio(self, task_id: str) -> str:
         deadline = time.monotonic() + self.timeout
         while time.monotonic() < deadline:
-            response = self._request_json("POST", "query_result", {"task_id_list": [task_id]})
+            response = self._request_json(
+                "POST", "query_result", {"task_id_list": [task_id]}
+            )
             rows = response.get("data") or []
             row = rows[0] if rows else {}
             status = int(row.get("status", 0))
@@ -151,7 +157,12 @@ class AceStepAPIBackend(GeneratorBackend):
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    def _request_json(self, method: str, endpoint: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    def _request_json(
+        self,
+        method: str,
+        endpoint: str,
+        payload: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         body = json.dumps(payload).encode("utf-8") if payload is not None else None
         request = Request(
             urljoin(self.base_url, endpoint),
@@ -169,7 +180,11 @@ class AceStepAPIBackend(GeneratorBackend):
         return decoded
 
     def _request_bytes(self, audio_ref: str) -> bytes:
-        url = audio_ref if audio_ref.startswith(("http://", "https://")) else urljoin(self.base_url, audio_ref.lstrip("/"))
+        url = (
+            audio_ref
+            if audio_ref.startswith(("http://", "https://"))
+            else urljoin(self.base_url, audio_ref.lstrip("/"))
+        )
         request = Request(url, method="GET", headers=self._headers())
         try:
             with urlopen(request, timeout=120) as response:
