@@ -18,12 +18,7 @@ class AceStepError(RuntimeError):
 
 
 class AceStepAPIBackend(GeneratorBackend):
-    """ACE-Step 1.5 adapter using its documented localhost REST API.
-
-    MEngine owns the musical contract; ACE-Step remains a replaceable renderer.
-    The adapter intentionally speaks HTTP instead of importing ACE-Step internals so
-    the two projects can evolve and be licensed/versioned independently.
-    """
+    """ACE-Step 1.5 adapter using its documented localhost REST API."""
 
     def __init__(
         self,
@@ -56,6 +51,11 @@ class AceStepAPIBackend(GeneratorBackend):
             return False
         return response.get("code", 200) == 200
 
+    @staticmethod
+    def _time_signature(meter: str) -> str:
+        documented = {"2/4": "2", "3/4": "3", "4/4": "4", "6/8": "6"}
+        return documented.get(meter, meter)
+
     def build_payload(self, spec: MambaSpec, *, seed: int) -> dict[str, Any]:
         style = spec.style.get("primary", "")
         secondary = spec.style.get("secondary", [])
@@ -83,7 +83,7 @@ class AceStepAPIBackend(GeneratorBackend):
             "audio_duration": float(spec.song.duration),
             "bpm": int(round(spec.song.bpm)),
             "key_scale": key_scale,
-            "time_signature": spec.song.meter,
+            "time_signature": self._time_signature(spec.song.meter),
             "use_random_seed": False,
             "seed": int(seed),
             "batch_size": 1,
