@@ -37,11 +37,18 @@ schools:
     priority: high
     purpose: geometric-and-spectral-audio-understanding
 
+  - id: research_curiosity
+    document: docs/RESEARCH_CURIOSITY_SCHOOL.md
+    stage: [research, unknown, analysis, tool-selection, quality-regression]
+    priority: high
+    purpose: evidence-driven-discovery-and-self-improvement
+    write_policy: research-only
+
 routing:
   composition:
     load: [field_manual, music_ecosystem, wave_geometry]
   analysis:
-    load: [field_manual, wave_geometry, music_ecosystem]
+    load: [field_manual, wave_geometry, music_ecosystem, research_curiosity]
   correction:
     load: [field_manual, wave_geometry]
   artwork:
@@ -50,5 +57,11 @@ routing:
     load: [field_manual, soundcloud_operations]
   publishing:
     load: [field_manual, soundcloud_operations, visual_creation]
+  research:
+    load: [field_manual, research_curiosity, music_ecosystem]
+  tool-selection:
+    load: [field_manual, music_ecosystem, research_curiosity]
+  quality-regression:
+    load: [field_manual, research_curiosity, wave_geometry]
   unknown:
-    load: [field_manual]
+    load: [field_manual, research_curiosity]
