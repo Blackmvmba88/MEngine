@@ -34,6 +34,7 @@ class Vocals(BaseModel):
     language: str = "en"
     density: float = Field(0.5, ge=0.0, le=1.0)
     repetition: float = Field(0.5, ge=0.0, le=1.0)
+    lyrics: str | None = None
 
 
 class Target(BaseModel):
