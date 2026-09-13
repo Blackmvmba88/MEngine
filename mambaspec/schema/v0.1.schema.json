@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://blackmamba.records/mambaspec/v0.1.schema.json",
+  "title": "MambaSpec v0.1",
+  "type": "object",
+  "required": ["mambaspec", "song", "target"],
+  "properties": {
+    "mambaspec": { "const": "0.1" },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "artist": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "song": {
+      "type": "object",
+      "required": ["bpm", "meter"],
+      "properties": {
+        "duration": { "type": "number", "exclusiveMinimum": 0 },
+        "bpm": { "type": "number", "minimum": 20, "maximum": 300 },
+        "meter": { "type": "string", "pattern": "^[1-9][0-9]*/[1-9][0-9]*$" },
+        "key": { "type": "string" },
+        "mode": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "style": {
+      "type": "object",
+      "properties": {
+        "primary": { "type": "string" },
+        "secondary": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "rhythm": {
+      "type": "object",
+      "properties": {
+        "swing": { "$ref": "#/$defs/unitInterval" },
+        "syncopation": { "$ref": "#/$defs/unitInterval" },
+        "kick_density": { "$ref": "#/$defs/unitInterval" }
+      },
+      "additionalProperties": false
+    },
+    "bass": {
+      "type": "object",
+      "properties": {
+        "prominence": { "$ref": "#/$defs/unitInterval" },
+        "sub_energy": { "$ref": "#/$defs/unitInterval" },
+        "movement": { "$ref": "#/$defs/unitInterval" }
+      },
+      "additionalProperties": false
+    },
+    "vocals": {
+      "type": "object",
+      "properties": {
+        "language": { "type": "string" },
+        "density": { "$ref": "#/$defs/unitInterval" },
+        "repetition": { "$ref": "#/$defs/unitInterval" }
+      },
+      "additionalProperties": false
+    },
+    "mix": {
+      "type": "object",
+      "properties": {
+        "stereo_width": { "$ref": "#/$defs/unitInterval" },
+        "dub_delay": { "$ref": "#/$defs/unitInterval" },
+        "spring_reverb": { "$ref": "#/$defs/unitInterval" }
+      },
+      "additionalProperties": false
+    },
+    "target": {
+      "type": "object",
+      "required": ["minimum_quality"],
+      "properties": {
+        "originality": { "$ref": "#/$defs/unitInterval" },
+        "minimum_quality": { "$ref": "#/$defs/unitInterval" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "unitInterval": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  },
+  "additionalProperties": false
+}
