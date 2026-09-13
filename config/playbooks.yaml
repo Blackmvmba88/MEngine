@@ -1,0 +1,143 @@
+version: 0.1
+
+defaults:
+  verify_after_action: true
+  preserve_original: true
+  destructive_actions: false
+  unknown_situation: safe_mode
+
+playbooks:
+  - id: audio_missing
+    trigger: input_audio_missing
+    action:
+      - preserve_metadata
+      - mark_unresolved
+    fallback: none
+    stop_condition: input_restored_or_human_review
+
+  - id: audio_unreadable
+    trigger: decoder_failure
+    action:
+      - probe_with_ffprobe
+      - inspect_with_sox_if_available
+      - create_non_destructive_working_copy
+    fallback: alternate_decoder
+    stop_condition: readable_working_copy_or_blocked
+
+  - id: tonal_uncertainty
+    trigger: key_scale_confidence_low
+    action:
+      - run_multiple_estimators
+      - rank_candidates
+      - preserve_alternatives
+    fallback: needs_review
+    stop_condition: confidence_threshold_or_explicit_uncertainty
+
+  - id: pitch_disagreement
+    trigger: pitch_engines_disagree
+    action:
+      - preserve_all_measurements
+      - run_tiebreaker_engine
+      - compare_operating_domain
+    fallback: explicit_uncertainty
+    stop_condition: consensus_or_confidence_report
+
+  - id: bad_stems
+    trigger: stem_quality_below_threshold
+    action:
+      - switch_separator
+      - score_bleed_artifacts_phase_transients
+      - select_best_result
+    fallback: analyze_master_without_stem_claims
+    stop_condition: acceptable_stems_or_degraded_mode
+
+  - id: generation_miss
+    trigger: candidate_score_below_target
+    action:
+      - build_error_map
+      - preserve_passing_dimensions
+      - repair_smallest_failure_set
+      - regenerate
+      - remeasure
+    fallback: alternate_backend
+    stop_condition: certified_or_iteration_budget_exhausted
+
+  - id: regression
+    trigger: new_score_below_best_score
+    action:
+      - restore_best_checkpoint
+      - record_failed_correction
+      - choose_alternate_correction
+    fallback: stop_refinement
+    stop_condition: improvement_or_budget_exhausted
+
+  - id: model_unavailable
+    trigger: backend_unavailable
+    action:
+      - resolve_compatible_adapter
+      - downgrade_compute_if_needed
+    fallback: queue_or_block
+    stop_condition: compatible_backend_or_no_safe_backend
+
+  - id: native_tool_missing
+    trigger: optional_cli_missing
+    action:
+      - use_python_fallback
+    fallback: alternate_adapter
+    stop_condition: capability_restored_or_degraded_mode
+
+  - id: compute_budget
+    trigger: compute_budget_exceeded
+    action:
+      - stop_low_rank_candidates
+      - preserve_best_checkpoint
+      - report_cost_state
+    fallback: none
+    stop_condition: budget_increase_or_mission_end
+
+  - id: license_uncertain
+    trigger: dependency_license_uncertain
+    action:
+      - disable_from_distributable_path
+      - separate_code_model_dataset_license_review
+      - mark_review_required
+    fallback: compatible_low_risk_adapter
+    stop_condition: approved_or_replaced
+
+  - id: catalog_ambiguous
+    trigger: track_identity_ambiguous
+    action:
+      - preserve_candidates
+      - compare_stable_ids_hashes_isrc_duration
+      - mark_needs_review
+    fallback: none
+    stop_condition: identity_verified
+
+  - id: external_api_changed
+    trigger: external_write_contract_changed
+    action:
+      - disable_writes
+      - retain_safe_reads
+      - capture_error_and_schema_evidence
+    fallback: none
+    stop_condition: contract_revalidated
+
+  - id: ci_failure
+    trigger: continuous_integration_failed
+    action:
+      - find_first_deterministic_failure
+      - reproduce_minimal_case
+      - block_release
+    fallback: none
+    stop_condition: deterministic_checks_pass
+
+  - id: unknown
+    trigger: no_known_playbook
+    action:
+      - enter_safe_mode
+      - prohibit_destructive_changes
+      - gather_evidence
+      - run_smallest_reversible_experiment
+      - propose_new_lesson
+    fallback: human_review
+    stop_condition: known_state_or_review
