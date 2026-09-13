@@ -27,6 +27,9 @@ dev = [
   "ruff>=0.6",
   "mypy>=1.11"
 ]
+stems = [
+  "demucs>=4.0.1"
+]
 
 [project.scripts]
 mengine-doctor = "mengine.doctor:main"
