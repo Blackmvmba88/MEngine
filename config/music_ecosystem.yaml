@@ -1,0 +1,177 @@
+version: 0.1
+
+policy:
+  principle: "reuse first, replace deliberately"
+  vendoring: false
+  default_integration: adapter
+  require_license_review: true
+  require_version_pin_for_production: true
+
+blackmamba:
+  - id: music
+    repo: Blackmvmba88/Music
+    role:
+      - canonical-library
+      - player
+      - metadata
+      - lyrics
+      - suno-connector
+      - soundcloud-connector
+      - editorial-evidence
+    integration_mode: adapter
+    trust: first_party
+    replaceable: false
+
+  - id: musica_soundcloud
+    repo: Blackmvmba88/MusicaSoundcloud
+    role:
+      - production-pipeline
+      - wav-master
+      - soundcloud-delivery
+      - reconciliation
+      - validation
+    integration_mode: adapter
+    trust: first_party
+    replaceable: false
+
+  - id: musica
+    repo: Blackmvmba88/Musica
+    role:
+      - catalog-reconciliation
+      - distribution-metadata
+      - release-watchdog
+      - metrics-source
+    integration_mode: adapter
+    trust: first_party
+    replaceable: false
+
+  - id: wave_reactive
+    repo: Blackmvmba88/onda-sinusoidal-reactiva
+    role:
+      - waveform-visualization
+      - fft
+      - realtime-audio
+      - wave-geometry-ui
+    integration_mode: adapter
+    trust: first_party
+    replaceable: true
+
+  - id: analyzer
+    repo: Blackmvmba88/Analizador
+    role:
+      - musical-analysis-schema
+      - form
+      - harmony
+      - melody
+      - rhythm
+      - arrangement
+      - mastering-analysis
+    integration_mode: adapter
+    trust: first_party
+    replaceable: true
+
+  - id: tuner
+    repo: Blackmvmba88/afindor
+    role:
+      - pitch-detection
+      - cents
+      - realtime-input
+      - pitch-engine-contract
+    integration_mode: adapter
+    trust: first_party
+    replaceable: true
+
+  - id: ai_dj
+    repo: Blackmvmba88/ai-dj
+    role:
+      - realtime-generation-reference
+      - vst3-reference
+      - local-generation
+      - stem-workflow-reference
+    integration_mode: reference-adapter
+    trust: first_party-fork
+    replaceable: true
+
+external:
+  - id: ace_step_15
+    repo: ace-step/ACE-Step-1.5
+    role:
+      - full-song-generation
+      - reference-audio
+      - editing
+      - stems
+      - metadata-control
+      - lora
+    license: MIT
+    integration_mode: process-or-api-adapter
+    trust: upstream
+    replaceable: true
+    commercial_risk: low-code-license-review-model-license-separately
+
+  - id: stable_audio_tools
+    repo: Stability-AI/stable-audio-tools
+    role:
+      - conditional-audio-generation
+      - training-reference
+      - diffusion
+      - autoencoder
+    license: MIT
+    integration_mode: python-adapter
+    trust: upstream
+    replaceable: true
+    commercial_risk: low-code-license-review-model-license-separately
+
+  - id: basic_pitch
+    repo: spotify/basic-pitch
+    role:
+      - polyphonic-pitch
+      - note-events
+      - midi
+      - transcription
+    license: Apache-2.0
+    integration_mode: python-or-cli-adapter
+    trust: upstream
+    replaceable: true
+    commercial_risk: low
+
+  - id: librosa
+    repo: librosa/librosa
+    role:
+      - audio-analysis
+      - spectral-features
+      - tempo
+      - pitch-support
+      - feature-extraction
+    license: ISC
+    integration_mode: python-library
+    trust: upstream
+    replaceable: true
+    commercial_risk: low
+
+  - id: demucs
+    repo: facebookresearch/demucs
+    role:
+      - source-separation-baseline
+      - drums
+      - bass
+      - vocals
+      - accompaniment
+    license: MIT
+    integration_mode: subprocess-or-python-adapter
+    trust: archived-upstream
+    replaceable: true
+    commercial_risk: low
+    notes: "Archived upstream; retain as benchmark/baseline, not sole separator."
+
+  - id: essentia
+    repo: MTG/essentia
+    role:
+      - advanced-audio-analysis
+      - descriptors
+      - music-information-retrieval
+    license: AGPL-3.0-or-commercial
+    integration_mode: optional-external-tool
+    trust: upstream
+    replaceable: true
+    commercial_risk: high-unless-commercial-license
+    enabled_by_default: false
