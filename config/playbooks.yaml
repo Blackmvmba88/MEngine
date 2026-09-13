@@ -1,4 +1,4 @@
-version: 0.1
+version: 0.2
 
 defaults:
   verify_after_action: true
@@ -7,6 +7,67 @@ defaults:
   unknown_situation: safe_mode
 
 playbooks:
+  - id: research_roi_gate
+    trigger: research_may_reduce_time_cost_or_iterations
+    action:
+      - estimate_current_path_time_cost_and_iteration_count
+      - estimate_research_cost_and_expected_savings
+      - research_if_expected_net_gain_is_positive
+      - prefer_official_docs_reputable_repos_and_reproducible_benchmarks
+      - run_small_reversible_benchmark
+      - adopt_only_if_measured_improvement_beats_baseline
+      - record_result_as_reusable_lesson
+    fallback: continue_known_path
+    stop_condition: measured_gain_confirmed_or_research_budget_exhausted
+
+  - id: profiler_first
+    trigger: pipeline_slow_or_expensive
+    action:
+      - profile_before_optimizing
+      - identify_top_latency_memory_and_io_bottlenecks
+      - optimize_highest_impact_stage_first
+      - rebenchmark_end_to_end
+    fallback: preserve_baseline
+    stop_condition: bottleneck_reduced_or_no_positive_roi
+
+  - id: adaptive_model_routing
+    trigger: multiple_backends_available
+    action:
+      - route_easy_tasks_to_fast_low_cost_backend
+      - reserve_expensive_backend_for_uncertain_or_high_value_steps
+      - compare_quality_per_second_and_quality_per_cost
+      - promote_best_backend_per_task_class
+    fallback: safest_compatible_backend
+    stop_condition: route_selected_with_evidence
+
+  - id: early_exit
+    trigger: candidate_clearly_fails_or_passes_threshold
+    action:
+      - stop_failed_candidates_early
+      - avoid_recomputing_passing_dimensions
+      - preserve_best_checkpoint
+    fallback: full_evaluation
+    stop_condition: candidate_pruned_or_certified
+
+  - id: cache_and_reuse
+    trigger: repeated_or_overlapping_work_detected
+    action:
+      - hash_inputs_parameters_models_and_tool_versions
+      - reuse_valid_analysis_features_stems_and_embeddings
+      - invalidate_cache_on_semantic_change
+    fallback: recompute
+    stop_condition: valid_cached_result_or_fresh_result
+
+  - id: parallel_candidate_funnel
+    trigger: exploration_requires_many_candidates
+    action:
+      - generate_low_cost_candidates_in_parallel
+      - rank_with_cheap_metrics_first
+      - discard_weak_candidates
+      - spend_expensive_compute_only_on_survivors
+    fallback: sequential_generation
+    stop_condition: finalist_set_selected
+
   - id: audio_missing
     trigger: input_audio_missing
     action:
