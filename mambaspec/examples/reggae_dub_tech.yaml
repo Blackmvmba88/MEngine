@@ -1,0 +1,43 @@
+mambaspec: "0.1"
+
+identity:
+  label: BlackMamba Records
+  artist: Iyari Gomez
+
+song:
+  duration: 218
+  bpm: 92
+  meter: 4/4
+  key: F#
+  mode: minor
+
+style:
+  primary: reggae-dub
+  secondary:
+    - psychedelic
+    - electronic
+    - tech
+
+rhythm:
+  swing: 0.12
+  syncopation: 0.81
+  kick_density: 0.34
+
+bass:
+  prominence: 0.92
+  sub_energy: 0.88
+  movement: 0.76
+
+vocals:
+  language: en
+  density: 0.31
+  repetition: 0.82
+
+mix:
+  stereo_width: 0.76
+  dub_delay: 0.84
+  spring_reverb: 0.67
+
+target:
+  originality: 0.95
+  minimum_quality: 0.92
