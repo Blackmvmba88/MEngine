@@ -1,0 +1,54 @@
+version: 0.1
+
+schools:
+  - id: field_manual
+    document: docs/MAMBA_FIELD_MANUAL.md
+    stage: [all]
+    priority: critical
+    purpose: operational-safety-and-response
+
+  - id: soundcloud_operations
+    document: docs/SOUNDCLOUD_OPERATIONS_SCHOOL.md
+    stage: [delivery, publishing, reconciliation, metrics]
+    priority: high
+    prerequisites:
+      - mamba_certification
+      - validated_track_identity
+    write_policy: gated
+
+  - id: visual_creation
+    document: docs/VISUAL_CREATION_SCHOOL.md
+    stage: [visuals, artwork, release-packaging]
+    priority: high
+    prerequisites:
+      - track_identity
+      - musical_context
+    write_policy: local-first
+
+  - id: music_ecosystem
+    document: docs/MUSIC_ECOSYSTEM.md
+    stage: [tool-selection, architecture, capability-routing]
+    priority: high
+    purpose: choose-best-available-tool-with-license-awareness
+
+  - id: wave_geometry
+    document: docs/WAVE_GEOMETRY.md
+    stage: [analysis, instrument-fingerprinting, synthesis, visualization]
+    priority: high
+    purpose: geometric-and-spectral-audio-understanding
+
+routing:
+  composition:
+    load: [field_manual, music_ecosystem, wave_geometry]
+  analysis:
+    load: [field_manual, wave_geometry, music_ecosystem]
+  correction:
+    load: [field_manual, wave_geometry]
+  artwork:
+    load: [field_manual, visual_creation]
+  soundcloud:
+    load: [field_manual, soundcloud_operations]
+  publishing:
+    load: [field_manual, soundcloud_operations, visual_creation]
+  unknown:
+    load: [field_manual]
