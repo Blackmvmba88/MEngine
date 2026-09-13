@@ -19,12 +19,19 @@ def test_payload_preserves_declarative_music_controls() -> None:
     assert payload["lyrics"] == "[inst]"
     assert payload["bpm"] == 92
     assert payload["key_scale"] == "F# Minor"
-    assert payload["time_signature"] == "4/4"
+    assert payload["time_signature"] == "4"
     assert payload["audio_duration"] == 60.0
     assert payload["audio_format"] == "wav"
     assert payload["seed"] == 88
     assert payload["use_random_seed"] is False
     assert payload["model"] == "acestep-v15-turbo"
+
+
+def test_payload_uses_explicit_lyrics_when_present() -> None:
+    spec = _spec()
+    spec.vocals.lyrics = "[Verse]\nBlackMamba rise"
+    payload = AceStepAPIBackend().build_payload(spec, seed=1)
+    assert payload["lyrics"] == "[Verse]\nBlackMamba rise"
 
 
 def test_result_parser_extracts_documented_audio_reference() -> None:
