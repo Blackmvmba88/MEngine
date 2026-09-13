@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 from mengine.backends.base import GeneratorBackend
 from mengine.core.ear.extractors import extract_features
-from mengine.core.judge.scorers import JudgmentResult, judge_features
+from mengine.core.judge.scorers import judge_features
 from mengine.core.mambaspec.schema import MambaSpec
 
 
