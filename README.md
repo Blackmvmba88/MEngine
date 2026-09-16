@@ -6,6 +6,29 @@ BLACKMAMBA MUSIC ENGINE is an experimental autonomous music-production platform 
 
 The goal is not merely to generate audio. The goal is to build a **music producer that can listen to its own output, detect deviations from a target specification, correct them, and iterate until the result is certified**.
 
+## Control surface v0.1
+
+The repository now includes the first official BlackMamba Music Engine visual control surface.
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://127.0.0.1:5173`.
+
+Current UI capabilities:
+
+- Theme presets: **BlackMamba, Silver, Violet, Ocean, Princess**.
+- Every visual color is editable live from the control panel.
+- Panel names are editable live.
+- Waveform, FFT, Spectrogram, Pitch, Harmonics and Stereo Phase can each become the main view.
+- Configuration persists locally in the browser.
+- UI actions are surfaced in an activity stream instead of happening invisibly.
+- `npm run build` is the minimum certification gate for the control surface.
+
+The preview visualizations are currently a UI/runtime harness. Real audio data will be connected through the Mamba Ear / audio input layer rather than hard-coupling the theme system to one analyzer implementation.
+
 ## Core hypothesis
 
 ```text
