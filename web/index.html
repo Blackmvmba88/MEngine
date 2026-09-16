@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BlackMamba Music Engine · Live Configurator</title>
+<style>
+:root{
+  --bg:#0b1118;--panel:#111a24;--panel2:#152130;--border:#2a3a4e;--text:#eef4fb;--muted:#9fb0c7;
+  --accent:#3b82f6;--ok:#55d85a;--warn:#ffca3a;--wave:#61a9ff;--fft1:#ff5a21;--fft2:#ffe600;--fft3:#00f07b;
+  --spec1:#00f0ff;--spec2:#4dff00;--spec3:#f5ff00;--harm:#67e36b;--pitch:#6eb5ff;--lyrics:#f3a6ff;
+  --shadow:0 18px 60px rgba(0,0,0,.22);--radius:18px;
+}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,rgba(72,126,255,.08),transparent 30%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,select,input{font:inherit}.app{min-height:100vh;padding:20px}.shell{max-width:1540px;margin:auto;border:1px solid var(--border);border-radius:28px;background:rgba(8,14,22,.78);box-shadow:var(--shadow);overflow:hidden}
+.top{display:flex;gap:18px;align-items:center;padding:22px 28px;border-bottom:1px solid var(--border)}.logo{width:88px;height:88px;border-radius:22px;background:linear-gradient(140deg,#fff 0 8%,#ff3d22 18%,#ffd400 34%,#4cff3c 49%,#19d8ff 65%,#5965ff 80%,#d94bff 100%);box-shadow:inset 0 0 0 5px rgba(255,255,255,.35),0 8px 30px rgba(94,205,255,.16)}
+.brand small{display:block;letter-spacing:.35em;color:var(--muted);font-size:12px}.brand h1{font-size:42px;line-height:1;margin:9px 0 5px}.brand p{margin:0;color:#bac7d9;font-size:20px}.status{margin-left:auto;padding:16px 20px;border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.03);min-width:270px}.status b{font-size:18px}.dot{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--ok);box-shadow:0 0 18px color-mix(in srgb,var(--ok) 70%,transparent);margin-right:10px}.status span{display:block;color:var(--muted);margin-left:25px;margin-top:5px}
+.toolbar{display:flex;gap:10px;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border);flex-wrap:wrap}.btn,.toolbar select{border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:11px 16px;border-radius:10px}.btn.primary{background:var(--accent);border-color:color-mix(in srgb,var(--accent) 80%,white)}.btn.ghost{background:transparent}.grow{flex:1}.toolbar label{color:var(--muted);font-size:14px}.micline{padding:8px 28px;color:var(--muted);font-size:13px}.micline .dot{width:9px;height:9px}
+.grid{display:grid;grid-template-columns:380px minmax(520px,1fr) 380px;gap:12px;padding:0 18px 18px}.col{display:grid;gap:12px;align-content:start}.card{background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.008)),var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;min-height:180px;position:relative;transition:.25s ease}.card:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--border));transform:translateY(-1px)}.card.main{min-height:650px}.cardHead{display:flex;justify-content:space-between;gap:12px;padding:16px 16px 8px}.cardHead strong{font-size:19px}.cardHead span{color:var(--muted);font-size:12px}.canvasWrap{padding:4px 16px 14px}.viz{width:100%;height:142px;border:1px solid var(--border);border-radius:6px;background:#0b141d;display:block}.main .viz{height:545px}.foot{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;padding:0 16px 12px}.bottom{display:grid;grid-template-columns:1.2fr 1.2fr 1fr 1fr;gap:12px;padding:0 18px 18px}.mini{min-height:160px}.metricRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:8px 16px 16px}.metric b{font-size:27px}.metric span{display:block;color:var(--muted);font-size:12px;margin-bottom:3px}.pitchBox{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px}.note{font-size:66px;line-height:.9}.note small{font-size:22px;color:var(--muted);display:block;margin-top:10px}.cents{border-left:1px solid var(--border);padding-left:20px}.cents b{font-size:28px;color:var(--ok)}.meter{height:8px;background:#313844;border-radius:99px;overflow:hidden;margin-top:16px}.meter i{display:block;height:100%;width:64%;background:linear-gradient(90deg,var(--ok),var(--warn))}
+.lyrics{padding:18px 20px;line-height:1.7;font-size:18px}.lyrics .current{color:var(--lyrics);font-weight:700;text-shadow:0 0 18px color-mix(in srgb,var(--lyrics) 50%,transparent)}.lyrics .past{color:#8593a4}.lyrics .future{color:#5d6878}.blink{display:inline-block;width:8px;height:20px;background:var(--lyrics);vertical-align:-3px;animation:blink 1s steps(1) infinite}@keyframes blink{50%{opacity:0}}
+.drawer{position:fixed;top:0;right:0;width:min(610px,96vw);height:100vh;background:#0c131d;border-left:1px solid var(--border);transform:translateX(102%);transition:.28s ease;z-index:20;box-shadow:-30px 0 80px rgba(0,0,0,.4);display:flex;flex-direction:column}.drawer.open{transform:none}.drawerHead{padding:20px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}.drawerHead h2{margin:0}.drawerBody{overflow:auto;padding:18px}.configTable{width:100%;border-collapse:collapse}.configTable th,.configTable td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.07);text-align:left}.configTable th{color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase}.configTable input[type=text]{width:100%;background:#121d29;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px}.configTable input[type=color]{width:44px;height:36px;border:0;background:transparent}.drawer h3{margin-top:24px}.themeGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.themeBtn{padding:12px;border-radius:10px;border:1px solid var(--border);background:#14202d;color:var(--text);text-align:left}.help{color:var(--muted);font-size:13px;line-height:1.6}.eventFeed{padding:12px 16px;display:grid;gap:8px;font-size:12px}.event{display:flex;gap:8px;align-items:center;color:var(--muted)}.event i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.focusMode .grid{grid-template-columns:1fr}.focusMode .col{display:none}.focusMode .col.active{display:grid}.focusMode .card{display:none}.focusMode .card.selected{display:block;min-height:720px}.focusMode .card.selected .viz{height:610px}
+@media(max-width:1100px){.grid{grid-template-columns:1fr 1fr}.main{grid-column:span 2}.bottom{grid-template-columns:1fr 1fr}.status{display:none}}@media(max-width:720px){.grid{grid-template-columns:1fr}.main{grid-column:auto}.bottom{grid-template-columns:1fr}.brand h1{font-size:28px}.logo{width:64px;height:64px}.brand p{font-size:14px}}
+</style>
+</head>
+<body>
+<div class="app"><div class="shell" id="shell">
+  <header class="top"><div class="logo"></div><div class="brand"><small>BLACKMAMBA RECORDS / AUDIO LAB</small><h1>BlackMamba Music Engine</h1><p>Iyari Gomez / El sonido se convierte en conocimiento</p></div><div class="status"><div><span class="dot"></span><b>Entrada activa</b></div><span>44.1 kHz · FFT 8192 · En vivo</span></div></header>
+  <div class="toolbar"><button class="btn primary">Análisis en vivo</button><span style="color:var(--muted);letter-spacing:.25em">V 0.3</span><div class="grow"></div><label>Vista principal</label><select id="mainView"></select><label>Tema</label><select id="themeSelect"><option value="dark">Oscuro</option><option value="princess">Princesa</option><option value="neon">Neón</option><option value="royal">BlackMamba Royal</option></select><button class="btn" id="focusBtn">Maximizar vista</button><button class="btn" id="configBtn">Configuración</button></div>
+  <div class="micline"><span class="dot"></span>Micrófono · análisis automático · transcripción automática</div>
+
+  <section class="grid" id="dashboard">
+    <div class="col active" data-col="left">
+      <article class="card module" data-id="wave"><div class="cardHead"><strong class="moduleTitle">Forma de onda</strong><span>Tiempo real</span></div><div class="canvasWrap"><canvas class="viz" data-viz="wave"></canvas></div><div class="foot"><span>Amplitud</span><span>Ventana de señal · mono</span></div></article>
+      <article class="card module" data-id="fft"><div class="cardHead"><strong class="moduleTitle">Espectro FFT</strong><span>Magnitud · dBFS</span></div><div class="canvasWrap"><canvas class="viz" data-viz="fft"></canvas></div><div class="foot"><span>30 Hz</span><span>20 kHz</span></div></article>
+      <article class="card module" data-id="spectrogram"><div class="cardHead"><strong class="moduleTitle">Espectrograma</strong><span>Tiempo × frecuencia</span></div><div class="canvasWrap"><canvas class="viz" data-viz="spectrogram"></canvas></div><div class="foot"><span>Graves → agudos</span><span>Tiempo →</span></div></article>
+    </div>
+
+    <div class="col active" data-col="center">
+      <article class="card main module selected" data-id="surface"><div class="cardHead"><strong class="moduleTitle">Superficie espectral</strong><span>Historial 3D</span></div><div class="canvasWrap"><canvas class="viz" data-viz="surface"></canvas></div><div class="foot"><span>65 muestras · escala logarítmica</span><span>Matemáticas que hacen visible la música</span></div></article>
+    </div>
+
+    <div class="col active" data-col="right">
+      <article class="card module" data-id="pitch"><div class="cardHead"><strong class="moduleTitle">Seguimiento de tono</strong><span>55–1760 Hz</span></div><div class="canvasWrap"><canvas class="viz" data-viz="pitch"></canvas></div><div class="foot"><span>Últimas 160 muestras</span><span>Monofónico</span></div></article>
+      <article class="card module" data-id="note"><div class="cardHead"><strong class="moduleTitle">Nota detectada</strong><span>Tono detectado</span></div><div class="pitchBox"><div><div class="note" id="noteName">B1<small id="noteHz">62.1 Hz</small></div></div><div class="cents"><span style="color:var(--muted)">Desviación</span><b id="cents">+9.4 ¢</b><div class="meter"><i id="centMeter"></i></div></div></div></article>
+      <article class="card module" data-id="harmonics"><div class="cardHead"><strong class="moduleTitle">Serie armónica</strong><span>Múltiplos de la fundamental</span></div><div class="canvasWrap"><canvas class="viz" data-viz="harmonics"></canvas></div><div class="foot"><span>1</span><span>12</span></div></article>
+    </div>
+  </section>
+
+  <section class="bottom">
+    <article class="card mini module" data-id="dynamics"><div class="cardHead"><strong class="moduleTitle">Amplitud y dinámica</strong><span>dBFS</span></div><div class="metricRow"><div class="metric"><span>RMS</span><b id="rms">-5.4</b></div><div class="metric"><span>Pico</span><b id="peak">0.0</b></div><div class="metric"><span>Factor de cresta</span><b id="crest">5.4</b></div></div></article>
+    <article class="card mini module" data-id="lyrics"><div class="cardHead"><strong class="moduleTitle">Letra en vivo</strong><span>Auto · voz detectada</span></div><div class="lyrics"><div class="past">I keep walking through the night</div><div class="current" id="lyricCurrent">Searching for a signal <span class="blink"></span></div><div class="future">in the rain...</div></div></article>
+    <article class="card mini module" data-id="tuning"><div class="cardHead"><strong class="moduleTitle">Afinación</strong><span>Referencia</span></div><div style="padding:18px;font-size:18px">A4 <b style="font-size:26px;margin-left:16px">440 Hz</b><div class="help" style="margin-top:16px">Se ajusta automáticamente; edición avanzada disponible.</div></div></article>
+    <article class="card mini module" data-id="engine"><div class="cardHead"><strong class="moduleTitle">Estado del motor</strong><span>Automático</span></div><div class="eventFeed" id="eventFeed"><div class="event"><i></i>Entrada de audio</div><div class="event"><i></i>Análisis FFT</div><div class="event"><i></i>Pitch tracking</div><div class="event"><i></i>Transcripción</div></div></article>
+  </section>
+</div></div>
+
+<aside class="drawer" id="drawer"><div class="drawerHead"><div><h2>Configuración visual</h2><div class="help">Cambia nombre y color; el resultado aparece en vivo.</div></div><button class="btn ghost" id="closeDrawer">Cerrar</button></div><div class="drawerBody">
+  <h3>Módulos</h3><table class="configTable"><thead><tr><th>Módulo</th><th>Nombre visible</th><th>Color</th></tr></thead><tbody id="configRows"></tbody></table>
+  <h3>Temas rápidos</h3><div class="themeGrid"><button class="themeBtn" data-theme="dark">Oscuro técnico</button><button class="themeBtn" data-theme="princess">Princesa</button><button class="themeBtn" data-theme="neon">Neón</button><button class="themeBtn" data-theme="royal">BlackMamba Royal</button></div>
+  <h3>Comportamiento</h3><div class="help">El análisis permanece automático. Estos controles sólo cambian presentación, nombres, colores y vista principal. No hay que activar letra, FFT, armónicos ni pitch manualmente.</div>
+</div></aside>
+
+<script>
+const modules={
+  wave:{label:'Forma de onda',color:'#61a9ff'},fft:{label:'Espectro FFT',color:'#00f07b'},spectrogram:{label:'Espectrograma',color:'#00f0ff'},surface:{label:'Superficie espectral',color:'#4dff00'},pitch:{label:'Seguimiento de tono',color:'#6eb5ff'},note:{label:'Nota detectada',color:'#67e36b'},harmonics:{label:'Serie armónica',color:'#ffd33d'},dynamics:{label:'Amplitud y dinámica',color:'#ff7b54'},lyrics:{label:'Letra en vivo',color:'#f3a6ff'},tuning:{label:'Afinación',color:'#7bdcff'},engine:{label:'Estado del motor',color:'#55d85a'}
+};
+const themePresets={
+ dark:{'--bg':'#0b1118','--panel':'#111a24','--panel2':'#152130','--border':'#2a3a4e','--text':'#eef4fb','--muted':'#9fb0c7','--accent':'#3b82f6','--lyrics':'#f3a6ff'},
+ princess:{'--bg':'#170d1c','--panel':'#25152e','--panel2':'#311d3d','--border':'#6c3f76','--text':'#fff5ff','--muted':'#d9bce0','--accent':'#ff7be5','--lyrics':'#ffd0f7','--ok':'#a9ffcb'},
+ neon:{'--bg':'#05090c','--panel':'#081218','--panel2':'#0a1821','--border':'#123745','--text':'#eaffff','--muted':'#83b3bc','--accent':'#00eaff','--lyrics':'#ff49e1','--ok':'#4dff00'},
+ royal:{'--bg':'#09080f','--panel':'#14101d','--panel2':'#1c1529','--border':'#44345d','--text':'#f7f0ff','--muted':'#b4a6c8','--accent':'#8b5cf6','--lyrics':'#d8b4fe','--ok':'#36e28b'}
+};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const root=document.documentElement;
+function applyTheme(name){Object.entries(themePresets[name]).forEach(([k,v])=>root.style.setProperty(k,v));$('#themeSelect').value=name;localStorage.setItem('bm-theme',name)}
+function applyModuleStyle(id){const m=modules[id];const el=document.querySelector(`[data-id="${id}"]`);if(!el)return;el.querySelector('.moduleTitle').textContent=m.label;el.style.setProperty('--module',m.color);el.style.boxShadow=`inset 0 1px 0 ${m.color}20`}
+function save(){localStorage.setItem('bm-modules',JSON.stringify(modules))}
+const saved=JSON.parse(localStorage.getItem('bm-modules')||'null');if(saved)Object.assign(modules,saved);
+applyTheme(localStorage.getItem('bm-theme')||'dark');Object.keys(modules).forEach(applyModuleStyle);
+
+const rows=$('#configRows');Object.entries(modules).forEach(([id,m])=>{const tr=document.createElement('tr');tr.innerHTML=`<td>${id}</td><td><input type="text" value="${m.label}" data-name="${id}"></td><td><input type="color" value="${m.color}" data-color="${id}"></td>`;rows.appendChild(tr)});
+rows.addEventListener('input',e=>{const id=e.target.dataset.name||e.target.dataset.color;if(!id)return;if(e.target.dataset.name)modules[id].label=e.target.value;if(e.target.dataset.color)modules[id].color=e.target.value;applyModuleStyle(id);refreshMainOptions();save()});
+$('#configBtn').onclick=()=>$('#drawer').classList.add('open');$('#closeDrawer').onclick=()=>$('#drawer').classList.remove('open');$$('.themeBtn').forEach(b=>b.onclick=()=>applyTheme(b.dataset.theme));$('#themeSelect').onchange=e=>applyTheme(e.target.value);
+
+const mainView=$('#mainView');function refreshMainOptions(){const v=mainView.value;mainView.innerHTML='';Object.entries(modules).filter(([id])=>['wave','fft','spectrogram','surface','pitch','harmonics','lyrics'].includes(id)).forEach(([id,m])=>{const o=new Option(m.label,id);mainView.add(o)});mainView.value=v||'surface'}refreshMainOptions();
+function selectMain(id){$$('.module').forEach(x=>x.classList.remove('selected'));const card=document.querySelector(`[data-id="${id}"]`);if(card)card.classList.add('selected');mainView.value=id}
+mainView.onchange=e=>selectMain(e.target.value);$$('.module').forEach(c=>c.ondblclick=()=>{if(['wave','fft','spectrogram','surface','pitch','harmonics','lyrics'].includes(c.dataset.id))selectMain(c.dataset.id)});
+let focused=false;$('#focusBtn').onclick=()=>{focused=!focused;$('#shell').classList.toggle('focusMode',focused);$('#focusBtn').textContent=focused?'Ver tablero':'Maximizar vista';const selected=$('.module.selected');if(focused&&selected){$$('.col').forEach(c=>c.classList.remove('active'));const col=selected.closest('.col');if(col)col.classList.add('active');else $('#dashboard').insertAdjacentElement('beforeend',selected)}};
+
+function setupCanvas(c){const r=c.getBoundingClientRect(),d=devicePixelRatio||1;c.width=r.width*d;c.height=r.height*d;const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);return{x,w:r.width,h:r.height}}
+function grid(ctx,w,h){ctx.strokeStyle=getComputedStyle(root).getPropertyValue('--border');ctx.globalAlpha=.55;ctx.lineWidth=1;for(let i=1;i<10;i++){ctx.beginPath();ctx.moveTo(i*w/10,0);ctx.lineTo(i*w/10,h);ctx.stroke()}for(let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(0,i*h/5);ctx.lineTo(w,i*h/5);ctx.stroke()}ctx.globalAlpha=1}
+let t=0;function draw(){t+=.035;$$('canvas').forEach(c=>{const {x,w,h}=setupCanvas(c);x.clearRect(0,0,w,h);grid(x,w,h);const type=c.dataset.viz;
+ if(type==='wave'){x.strokeStyle=modules.wave.color;x.lineWidth=2;x.beginPath();for(let i=0;i<w;i+=4){const y=h*.5+Math.sin(i*.04+t)*h*.18+Math.sin(i*.011+t*1.7)*h*.08+(Math.random()-.5)*4;i?x.lineTo(i,y):x.moveTo(i,y)}x.stroke()}
+ if(type==='fft'){const n=46,bw=w/n;for(let i=0;i<n;i++){const amp=(.16+.74*Math.exp(-i/18))*(.7+.3*Math.sin(t*1.4+i*.4));const hue=14+i*5;x.fillStyle=`hsl(${hue} 100% 55%)`;x.fillRect(i*bw+1,h-amp*h,bw-2,amp*h)}}
+ if(type==='spectrogram'){for(let yy=0;yy<h;yy+=4){const q=yy/h;const hue=250-210*q+20*Math.sin(t+q*9);x.fillStyle=`hsl(${hue} 100% ${40+22*Math.sin(t*.7+q*5)}%)`;x.fillRect(0,yy,w,5)}x.globalAlpha=.25;for(let i=0;i<12;i++){x.fillStyle='#fff';x.fillRect((i*79+t*60)%w,0,8+Math.random()*18,h)}x.globalAlpha=1}
+ if(type==='surface'){const lines=42;for(let l=0;l<lines;l++){const p=l/(lines-1),yy=40+p*(h-95),offset=p*100;x.strokeStyle=`hsl(${70+190*p} 100% 52%)`;x.lineWidth=1.7;x.beginPath();for(let i=0;i<w*.72;i+=6){const px=50+i+offset*.2;const amp=(1-p*.2)*(Math.sin(i*.018+t+p*5)*36+Math.sin(i*.052-t*.7+p*11)*18+Math.sin(i*.006+p*4)*42);const py=yy-amp*(1-p*.45);i?x.lineTo(px,py):x.moveTo(px,py)}x.stroke()}}
+ if(type==='pitch'){x.strokeStyle=modules.pitch.color;x.lineWidth=2;x.beginPath();for(let i=0;i<w;i+=5){let y=h*.78-Math.max(0,Math.sin(t*.8+i*.05))*h*.10;if((i/5)%23<3)y-=h*.32*Math.abs(Math.sin(t+i));i?x.lineTo(i,y):x.moveTo(i,y)}x.stroke()}
+ if(type==='harmonics'){for(let i=0;i<12;i++){const px=(i+1)*w/13;const amp=h*(.18+.65*Math.exp(-i/7))*(.82+.18*Math.sin(t+i));x.strokeStyle=`hsl(${20+i*24} 95% 55%)`;x.lineWidth=2;x.beginPath();x.moveTo(px,h);x.lineTo(px,h-amp);x.stroke();x.fillStyle=x.strokeStyle;x.beginPath();x.arc(px,h-amp,3.5,0,Math.PI*2);x.fill()}}
+ });
+ const hz=61.7+Math.sin(t*.7)*.7,c=Math.sin(t*.9)*11;$('#noteHz').textContent=hz.toFixed(1)+' Hz';$('#cents').textContent=(c>=0?'+':'')+c.toFixed(1)+' ¢';$('#centMeter').style.width=(50+c*3)+'%';$('#rms').textContent=(-5.4+Math.sin(t)*1.1).toFixed(1);$('#peak').textContent=(Math.min(0,-.2+Math.sin(t*.8)*.2)).toFixed(1);$('#crest').textContent=(5.2+Math.sin(t*.5)*.6).toFixed(1);
+ requestAnimationFrame(draw)}draw();
+
+const lyricParts=['Searching for a signal','Searching for a signal in','Searching for a signal in the','Searching for a signal in the rain'];let lp=0;setInterval(()=>{$('#lyricCurrent').innerHTML=lyricParts[lp%lyricParts.length]+' <span class="blink"></span>';lp++},1100);
+const feed=$('#eventFeed');const evs=['Fundamental estable · 62 Hz','Serie armónica H1–H12','Voz detectada','Letra parcial actualizada','FFT frame procesado','Telemetría escrita'];let ei=0;setInterval(()=>{const d=document.createElement('div');d.className='event';d.innerHTML='<i></i>'+evs[ei++%evs.length];feed.prepend(d);while(feed.children.length>5)feed.lastElementChild.remove()},1600);
+window.addEventListener('resize',()=>{});
+</script>
+</body>
+</html>
