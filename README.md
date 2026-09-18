@@ -26,8 +26,10 @@ Current UI capabilities:
 - Configuration persists locally in the browser.
 - UI actions are surfaced in an activity stream instead of happening invisibly.
 - `npm run build` is the minimum certification gate for the control surface.
+- **START MIC** activates local browser capture without routing the microphone back to speakers.
+- Audio capture requests disable echo cancellation, noise suppression and automatic gain control where the browser permits it, so Mamba Ear observes a less processed signal.
 
-The preview visualizations are currently a UI/runtime harness. Real audio data will be connected through the Mamba Ear / audio input layer rather than hard-coupling the theme system to one analyzer implementation.
+The control surface now includes **Mamba Ear Browser v0.1** for microphone input through the Web Audio API. Waveform, FFT energy, pitch estimation and harmonic energy consume live analyzer frames while the theme engine remains analyzer-agnostic. Stereo phase remains a preview until the input layer exposes independent left/right channels.
 
 ## Core hypothesis
 

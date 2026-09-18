@@ -815,3 +815,27 @@ button {
     font-size: 8px;
   }
 }
+
+
+.audio-pill {
+  border: 1px solid color-mix(in srgb, var(--bm-accent) 55%, var(--bm-border));
+  border-radius: 999px;
+  padding: 7px 10px;
+  cursor: pointer;
+  color: var(--bm-accent);
+  background: color-mix(in srgb, var(--bm-accent) 10%, var(--bm-panel));
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.audio-pill:hover {
+  border-color: var(--bm-accent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--bm-glow) 24%, transparent);
+}
+
+.identity-strip .audio-error {
+  max-width: 280px;
+  color: #ff9d9d;
+  border-color: color-mix(in srgb, #ff6b6b 48%, var(--bm-border));
+}
