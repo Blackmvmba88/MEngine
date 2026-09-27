@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   evaluateDistributionGate,
   scoreAudienceRating,
@@ -11,6 +11,7 @@ import { tracksFromSunoManifest, type SunoManifestRow } from "./adapters/sunoSui
 import { tracksFromCanonicalLibrary, type CanonicalLibrary } from "./adapters/canonicalLibrary";
 import type { FileCandidate } from "./identityResolver";
 import { handoffDistribution } from "./distribution";
+import { formatPlaybackTime, useTrackPlayer } from "./player";
 import { applyAudienceVectors, CATALOG_RANK_LABELS, formatCatalogRankValue, hasAudienceEvidence, rankTracks, type CatalogRankMetric } from "./catalogAnalytics";
 import { applySoundCloudCotejo, applySoundCloudMetrics, type SoundCloudCotejoMatch, type SoundCloudMetricRow } from "./adapters/soundcloud";
 
@@ -75,6 +76,18 @@ export const TrackConsole = ({ onActivity }: Props) => {
   const [rankMetric, setRankMetric] = useState<CatalogRankMetric>("explosiveness");
   const [distributionState, setDistributionState] = useState<"idle" | "sending" | "queued" | "error">("idle");
   const [distributionDetail, setDistributionDetail] = useState<string>("");
+  const player = useTrackPlayer(track);
+
+  useEffect(
+    () => () => {
+      for (const candidate of assetCandidates) {
+        if (candidate.runtimeUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(candidate.runtimeUrl);
+        }
+      }
+    },
+    [assetCandidates],
+  );
 
   const audienceRating = useMemo(
     () =>
@@ -191,6 +204,7 @@ export const TrackConsole = ({ onActivity }: Props) => {
           name: file.name,
           path: file.webkitRelativePath || file.name,
           mimeType: file.type || undefined,
+          runtimeUrl: URL.createObjectURL(file),
         };
 
         if (file.type.startsWith("image/") && "createImageBitmap" in window) {
@@ -228,6 +242,16 @@ export const TrackConsole = ({ onActivity }: Props) => {
     setDistributionState("idle");
     setDistributionDetail("");
     onActivity?.("TRACK", selected.track.metadata.title);
+  };
+
+  const stepTrack = (direction: -1 | 1) => {
+    if (rankedCatalogTracks.length < 2) return;
+    const index = rankedCatalogTracks.findIndex((item) => item.id === track.id);
+    const currentIndex = index >= 0 ? index : 0;
+    const nextIndex =
+      (currentIndex + direction + rankedCatalogTracks.length) %
+      rankedCatalogTracks.length;
+    selectCatalogTrack(rankedCatalogTracks[nextIndex].id);
   };
 
   const syncCatalogTrack = (updated: TrackPackage) => {
@@ -323,7 +347,13 @@ export const TrackConsole = ({ onActivity }: Props) => {
       tracks: catalogTracks,
     };
     const blob = new Blob(
-      [JSON.stringify(payload, null, 2)],
+      [
+        JSON.stringify(
+          payload,
+          (key, value) => (key === "runtimeUrl" ? undefined : value),
+          2,
+        ),
+      ],
       { type: "application/json" },
     );
     const url = URL.createObjectURL(blob);
@@ -567,6 +597,69 @@ export const TrackConsole = ({ onActivity }: Props) => {
 
       {mode === "player" && (
         <div className="mode-panel">
+          <div className="transport-panel">
+            <div className="transport-buttons">
+              <button
+                onClick={() => stepTrack(-1)}
+                disabled={rankedCatalogTracks.length < 2}
+                aria-label="Previous track"
+              >
+                ⏮
+              </button>
+              <button
+                className="play-button"
+                onClick={() => void player.toggle()}
+                disabled={!player.url}
+                aria-label={player.isPlaying ? "Pause" : "Play"}
+              >
+                {player.isPlaying ? "⏸" : "▶"}
+              </button>
+              <button
+                onClick={() => stepTrack(1)}
+                disabled={rankedCatalogTracks.length < 2}
+                aria-label="Next track"
+              >
+                ⏭
+              </button>
+            </div>
+
+            <div className="transport-timeline">
+              <div className="transport-time">
+                <span>{formatPlaybackTime(player.currentTime)}</span>
+                <span>{formatPlaybackTime(player.duration)}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={Math.max(player.duration, 0)}
+                step={0.1}
+                value={Math.min(player.currentTime, player.duration || 0)}
+                disabled={!player.duration}
+                onChange={(event) => player.seek(Number(event.target.value))}
+                aria-label="Playback position"
+              />
+            </div>
+
+            <label className="volume-control">
+              <span>VOL</span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={player.volume}
+                onChange={(event) => player.setVolume(Number(event.target.value))}
+                aria-label="Volume"
+              />
+              <strong>{Math.round(player.volume * 100)}%</strong>
+            </label>
+
+            <div className="transport-source">
+              <span>{track.assets.audio?.path ?? "NO AUDIO"}</span>
+              <small>{player.error ?? (player.url ? "PLAYBACK READY" : "SOURCE REQUIRED")}</small>
+            </div>
+          </div>
+
           <div className="vector-grid">
             <div><span>BPM</span><strong>{track.technical.bpm ?? "—"}</strong><small>{clampPercent(track.technical.bpmConfidence)}% confidence</small></div>
             <div><span>KEY</span><strong>{track.technical.key ?? "—"} {track.technical.mode ?? ""}</strong><small>tonal center</small></div>
