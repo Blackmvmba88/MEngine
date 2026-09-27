@@ -165,3 +165,18 @@ The project may study commercial systems through documented functionality, obser
 **Iyari Gomez**
 
 > Music is not generated. Music is engineered, heard, corrected, and finally certified.
+
+
+## Unified music stack
+
+The active consolidation contract lives in [docs/UNIFIED-MENGINE.md](docs/UNIFIED-MENGINE.md).
+
+MEngine is the canonical host for the BlackMamba music stack. Existing players,
+catalog tools, analyzers and performance engines are integrated through shared
+Track Package and capability-adapter contracts rather than creating another
+parallel player schema.
+
+The Distribution Gate is implemented in `src/catalog.ts`. Lyrics and ratings
+are intentionally non-blocking; audio, core metadata, 1:1 cover, panoramic
+cover, video, style and motto are required before the English **Distribute**
+action becomes eligible.
