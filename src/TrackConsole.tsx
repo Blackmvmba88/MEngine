@@ -12,11 +12,13 @@ import { tracksFromCanonicalLibrary, type CanonicalLibrary } from "./adapters/ca
 import type { FileCandidate } from "./identityResolver";
 import { handoffDistribution } from "./distribution";
 import { formatPlaybackTime, useTrackPlayer } from "./player";
+import { useMediaElementEar, type AudioFrame } from "./audio";
 import { applyAudienceVectors, CATALOG_RANK_LABELS, formatCatalogRankValue, hasAudienceEvidence, rankTracks, type CatalogRankMetric } from "./catalogAnalytics";
 import { applySoundCloudCotejo, applySoundCloudMetrics, type SoundCloudCotejoMatch, type SoundCloudMetricRow } from "./adapters/soundcloud";
 
 type Props = {
   onActivity?: (action: string, detail: string) => void;
+  onPlayerFrame?: (frame: AudioFrame, active: boolean) => void;
 };
 
 const INITIAL_METADATA: TrackMetadata = {
@@ -54,7 +56,7 @@ const clampPercent = (value?: number) =>
 const formatNumber = (value?: number) =>
   value === undefined ? "—" : new Intl.NumberFormat().format(value);
 
-export const TrackConsole = ({ onActivity }: Props) => {
+export const TrackConsole = ({ onActivity, onPlayerFrame }: Props) => {
   const [mode, setMode] = useState<EngineMode>("player");
   const [track, setTrack] = useState<TrackPackage>(() => ({
     ...INITIAL_TRACK,
@@ -77,6 +79,11 @@ export const TrackConsole = ({ onActivity }: Props) => {
   const [distributionState, setDistributionState] = useState<"idle" | "sending" | "queued" | "error">("idle");
   const [distributionDetail, setDistributionDetail] = useState<string>("");
   const player = useTrackPlayer(track);
+  const playerEar = useMediaElementEar(player.audioElement, player.isPlaying);
+
+  useEffect(() => {
+    onPlayerFrame?.(playerEar.frame, playerEar.isActive);
+  }, [onPlayerFrame, playerEar.frame, playerEar.isActive]);
 
   useEffect(
     () => () => {
@@ -656,7 +663,11 @@ export const TrackConsole = ({ onActivity }: Props) => {
 
             <div className="transport-source">
               <span>{track.assets.audio?.path ?? "NO AUDIO"}</span>
-              <small>{player.error ?? (player.url ? "PLAYBACK READY" : "SOURCE REQUIRED")}</small>
+              <small>
+                {player.error ??
+                  playerEar.error ??
+                  (player.url ? "PLAYBACK + MAMBA EAR READY" : "SOURCE REQUIRED")}
+              </small>
             </div>
           </div>
 
