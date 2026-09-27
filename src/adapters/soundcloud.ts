@@ -11,6 +11,9 @@ export type SoundCloudMetricRow = {
   repostsCount: number | null;
   downloadCount?: number | null;
   createdAt?: string | null;
+  capturedAt?: string | null;
+  plays7d?: number | null;
+  plays30d?: number | null;
 };
 
 export type SoundCloudMetricMatch = {
@@ -125,6 +128,8 @@ export const applySoundCloudMetrics = (
         audience: {
           ...track.audience,
           playsLifetime: row.playbackCount ?? track.audience.playsLifetime,
+          plays7d: row.plays7d ?? track.audience.plays7d,
+          plays30d: row.plays30d ?? track.audience.plays30d,
           likes: row.likesCount ?? track.audience.likes,
           comments: row.commentCount ?? track.audience.comments,
           reposts: row.repostsCount ?? track.audience.reposts,
