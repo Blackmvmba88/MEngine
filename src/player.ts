@@ -33,6 +33,7 @@ export const formatPlaybackTime = (seconds: number): string => {
 
 export const useTrackPlayer = (track: TrackPackage) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -47,6 +48,7 @@ export const useTrackPlayer = (track: TrackPackage) => {
     audio.crossOrigin = "anonymous";
     audio.volume = volume;
     audioRef.current = audio;
+    setAudioElement(audio);
 
     const updateTime = () => setCurrentTime(audio.currentTime || 0);
     const updateDuration = () =>
@@ -96,6 +98,7 @@ export const useTrackPlayer = (track: TrackPackage) => {
       audio.removeEventListener("ended", ended);
       audio.removeEventListener("error", failed);
       if (audioRef.current === audio) audioRef.current = null;
+      setAudioElement((current) => (current === audio ? null : current));
     };
   }, [track.id, url]);
 
@@ -133,6 +136,7 @@ export const useTrackPlayer = (track: TrackPackage) => {
 
   return {
     audioRef,
+    audioElement,
     url,
     isPlaying,
     currentTime,
