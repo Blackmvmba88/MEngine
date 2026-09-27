@@ -839,3 +839,237 @@ button {
   color: #ff9d9d;
   border-color: color-mix(in srgb, #ff6b6b 48%, var(--bm-border));
 }
+
+
+/* Unified catalog / distribution console */
+.track-console {
+  border: 1px solid var(--bm-border);
+  background: color-mix(in srgb, var(--bm-panel) 92%, transparent);
+  border-radius: 18px;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.track-console-head {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.track-console-head h2,
+.karaoke-panel h3 {
+  margin: 4px 0;
+}
+
+.track-console-head p {
+  margin: 0;
+  color: var(--bm-muted);
+}
+
+.distribute-button {
+  min-width: 190px;
+  border: 1px solid var(--bm-border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--bm-surface);
+  color: var(--bm-muted);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.distribute-button.ready {
+  background: #1f9d55;
+  border-color: #43d17a;
+  color: white;
+  box-shadow: 0 0 24px rgba(67, 209, 122, 0.22);
+  cursor: pointer;
+}
+
+.engine-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.engine-mode-tabs button {
+  min-height: 76px;
+  text-align: left;
+  border: 1px solid var(--bm-border);
+  border-radius: 12px;
+  padding: 10px;
+  background: var(--bm-surface);
+  color: var(--bm-text);
+}
+
+.engine-mode-tabs button.active {
+  border-color: var(--bm-accent);
+  box-shadow: 0 0 18px var(--bm-glow);
+}
+
+.engine-mode-tabs small {
+  display: block;
+  margin-top: 5px;
+  color: var(--bm-muted);
+  line-height: 1.25;
+}
+
+.track-summary-grid,
+.vector-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rating-card,
+.vector-grid > div {
+  border: 1px solid var(--bm-border);
+  border-radius: 12px;
+  padding: 12px;
+  background: var(--bm-surface);
+}
+
+.rating-card > span,
+.vector-grid span {
+  color: var(--bm-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.rating-card small,
+.vector-grid small {
+  display: block;
+  margin-top: 4px;
+  color: var(--bm-muted);
+}
+
+.rating-big {
+  display: block;
+  font-size: 1.45rem;
+  margin-top: 5px;
+}
+
+.stars {
+  display: flex;
+  gap: 2px;
+  margin: 6px 0 4px;
+}
+
+.stars button {
+  border: 0;
+  background: transparent;
+  color: var(--bm-muted);
+  font-size: 1.2rem;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.stars button.active {
+  color: #ffd34d;
+}
+
+.gate-ok { color: #43d17a; }
+.gate-warn { color: #ffb347; }
+
+.mode-panel {
+  border-top: 1px solid var(--bm-border);
+  padding-top: 14px;
+}
+
+.edit-mode-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 14px;
+}
+
+.metadata-editor {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.metadata-editor label,
+.pro-selector label {
+  display: grid;
+  gap: 5px;
+  color: var(--bm-muted);
+  font-size: 0.75rem;
+}
+
+.metadata-editor input,
+.pro-selector select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--bm-border);
+  border-radius: 9px;
+  background: var(--bm-surface);
+  color: var(--bm-text);
+  padding: 9px 10px;
+}
+
+.gate-checklist {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+}
+
+.gate-row {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--bm-border);
+  border-radius: 9px;
+  padding: 7px 9px;
+  background: var(--bm-surface);
+}
+
+.gate-row.ok > span { color: #43d17a; }
+.gate-row.missing > span { color: #ff6b6b; }
+.gate-row.optional > span { color: var(--bm-muted); }
+.gate-row small { color: var(--bm-muted); }
+
+.karaoke-panel,
+.pro-panel {
+  min-height: 120px;
+}
+
+.karaoke-panel p {
+  max-width: 760px;
+  color: var(--bm-muted);
+}
+
+.pro-selector {
+  max-width: 260px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1000px) {
+  .engine-mode-tabs,
+  .track-summary-grid,
+  .vector-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .edit-mode-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .track-console-head {
+    flex-direction: column;
+  }
+
+  .distribute-button {
+    width: 100%;
+  }
+
+  .engine-mode-tabs,
+  .track-summary-grid,
+  .vector-grid,
+  .metadata-editor {
+    grid-template-columns: 1fr;
+  }
+}
