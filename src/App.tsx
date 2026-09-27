@@ -14,7 +14,7 @@ import {
   type ThemePresetName,
   type VisualPanel,
 } from "./theme";
-import { useMambaEar, type AudioFrame } from "./audio";
+import { useMambaEar, type AudioFrame } from "./audio";\nimport { TrackConsole } from "./TrackConsole";
 
 const STORAGE_KEY = "blackmamba-mengine-ui-v1";
 
@@ -333,7 +333,7 @@ const App = () => {
             ))}
           </div>
 
-          <section className="activity-panel">
+          <TrackConsole onActivity={log} />\n\n          <section className="activity-panel">
             <div className="section-title">
               <span>ACTIVITY</span>
               <small>AUTOMATIC UI FEEDBACK</small>
