@@ -12,6 +12,11 @@ export type FileCandidate = AssetRef & {
   name: string;
 };
 
+export type IdentityAnchor = {
+  key: string;
+  displayTitle: string;
+};
+
 export type IdentityMatch = {
   key: string;
   displayTitle: string;
@@ -26,29 +31,58 @@ const VIDEO_EXT = new Set(["mp4", "mov", "mkv", "webm", "m4v"]);
 const IMAGE_EXT = new Set(["png", "jpg", "jpeg", "webp"]);
 const LYRIC_EXT = new Set(["txt", "lrc", "srt", "vtt"]);
 
+const ASSET_TOKENS = new Set([
+  "audio",
+  "cover",
+  "artwork",
+  "art",
+  "square",
+  "1x1",
+  "3000x3000",
+  "wide",
+  "widescreen",
+  "panoramic",
+  "panorama",
+  "pano",
+  "16x9",
+  "16-9",
+  "video",
+  "official",
+  "visualizer",
+  "lyric",
+  "lyrics",
+  "karaoke",
+  "suno",
+]);
+
 const extension = (name: string): string =>
   name.toLowerCase().split(".").pop() ?? "";
 
 const stem = (name: string): string =>
   name.replace(/\.[^.]+$/, "");
 
-const stripAssetTokens = (value: string): string =>
+const normalizeWords = (value: string): string[] =>
   value
-    .replace(/^\d{4}[-_.]\d{2}[-_.]\d{2}[-_ ]*/, "")
-    .replace(/\[(?:suno|audio|video|cover|artwork)\]/gi, " ")
-    .replace(
-      /(?:^|[-_ ])(?:cover|artwork|art|square|1x1|3000x3000|wide|widescreen|panoramic|panorama|pano|16x9|16-9|video|official|visualizer|lyrics?|karaoke)(?:$|[-_ ])/gi,
-      " ",
-    );
-
-export const normalizeTrackKey = (name: string): string =>
-  stripAssetTokens(stem(name))
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
-    .replace(/\s+/g, "-");
+    .split(/\s+/)
+    .filter(Boolean);
+
+export const normalizeTrackKey = (name: string): string =>
+  normalizeWords(stem(name)).join("-");
+
+export const normalizeAssetKey = (name: string): string => {
+  const withoutDate = stem(name)
+    .replace(/^\d{4}[-_.]\d{2}[-_.]\d{2}[-_ ]*/, "")
+    .replace(/\[(?:suno|audio|video|cover|artwork)\]/gi, " ");
+
+  return normalizeWords(withoutDate)
+    .filter((token) => !ASSET_TOKENS.has(token))
+    .join("-");
+};
 
 const tokenize = (key: string): Set<string> =>
   new Set(key.split("-").filter(Boolean));
@@ -59,6 +93,7 @@ const similarity = (a: string, b: string): number => {
   const bb = tokenize(b);
   const union = new Set([...aa, ...bb]);
   if (!union.size) return 0;
+
   let intersection = 0;
   for (const token of aa) {
     if (bb.has(token)) intersection += 1;
@@ -91,14 +126,18 @@ export const classifyCandidate = (file: FileCandidate): AssetKind => {
 };
 
 const displayTitle = (file: FileCandidate): string =>
-  stripAssetTokens(stem(file.name))
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
+  normalizeAssetKey(file.name)
+    .replace(/-/g, " ")
     .trim();
 
-const attachAsset = (assets: TrackAssets, kind: AssetKind, file: FileCandidate) => {
+const attachAsset = (
+  assets: TrackAssets,
+  kind: AssetKind,
+  file: FileCandidate,
+): boolean => {
   if (kind === "unknown") return false;
   if (assets[kind]) return false;
+
   assets[kind] = {
     path: file.path,
     mimeType: file.mimeType,
@@ -109,29 +148,53 @@ const attachAsset = (assets: TrackAssets, kind: AssetKind, file: FileCandidate) 
   return true;
 };
 
-export const resolveTrackIdentities = (files: FileCandidate[]): IdentityMatch[] => {
-  const audioFiles = files.filter((file) => classifyCandidate(file) === "audio");
+export const resolveTrackIdentities = (
+  files: FileCandidate[],
+  anchors: IdentityAnchor[] = [],
+): IdentityMatch[] => {
   const groups = new Map<string, IdentityMatch>();
 
-  for (const audio of audioFiles) {
-    const key = normalizeTrackKey(audio.name);
-    if (!key) continue;
-    const group: IdentityMatch = groups.get(key) ?? {
+  for (const anchor of anchors) {
+    const key = normalizeTrackKey(anchor.key);
+    if (!key || groups.has(key)) continue;
+    groups.set(key, {
       key,
-      displayTitle: displayTitle(audio),
+      displayTitle: anchor.displayTitle,
       confidence: "exact",
       confidenceScore: 1,
       assets: {},
       unresolved: [],
+    });
+  }
+
+  const audioFiles = files.filter(
+    (file) => classifyCandidate(file) === "audio",
+  );
+
+  for (const audio of audioFiles) {
+    const key = normalizeAssetKey(audio.name);
+    if (!key) continue;
+
+    const group = groups.get(key) ?? {
+      key,
+      displayTitle: displayTitle(audio),
+      confidence: "exact" as const,
+      confidenceScore: 1,
+      assets: {},
+      unresolved: [],
     };
-    attachAsset(group.assets, "audio", audio);
+
+    if (!attachAsset(group.assets, "audio", audio)) {
+      group.unresolved.push(audio);
+      group.confidence = "review";
+    }
     groups.set(key, group);
   }
 
   for (const file of files) {
     if (classifyCandidate(file) === "audio") continue;
 
-    const fileKey = normalizeTrackKey(file.name);
+    const fileKey = normalizeAssetKey(file.name);
     let target = groups.get(fileKey);
     let score = target ? 1 : 0;
 
@@ -145,27 +208,38 @@ export const resolveTrackIdentities = (files: FileCandidate[]): IdentityMatch[] 
       }
     }
 
-    if (!target || score < 0.5) {
-      const orphanKey = fileKey || `review-${groups.size + 1}`;
-      const orphan = groups.get(orphanKey) ?? {
-        key: orphanKey,
-        displayTitle: displayTitle(file),
-        confidence: "review" as const,
-        confidenceScore: score,
-        assets: {},
-        unresolved: [],
-      };
-      orphan.unresolved.push(file);
-      groups.set(orphanKey, orphan);
+    if (!target || score < 0.75) {
+      if (target) {
+        target.unresolved.push(file);
+        target.confidence = "review";
+        target.confidenceScore = Math.min(target.confidenceScore, score);
+      } else {
+        const orphanKey = fileKey || `review-${groups.size + 1}`;
+        const orphan = groups.get(orphanKey) ?? {
+          key: orphanKey,
+          displayTitle: displayTitle(file),
+          confidence: "review" as const,
+          confidenceScore: score,
+          assets: {},
+          unresolved: [],
+        };
+        orphan.unresolved.push(file);
+        groups.set(orphanKey, orphan);
+      }
       continue;
     }
 
     const kind = classifyCandidate(file);
     const attached = attachAsset(target.assets, kind, file);
-    if (!attached) target.unresolved.push(file);
+    if (!attached) {
+      target.unresolved.push(file);
+      target.confidence = "review";
+      target.confidenceScore = Math.min(target.confidenceScore, score);
+      continue;
+    }
 
-    if (score < 1) {
-      target.confidence = score >= 0.75 ? "probable" : "review";
+    if (score < 1 && target.confidence !== "review") {
+      target.confidence = "probable";
       target.confidenceScore = Math.min(target.confidenceScore, score);
     }
   }
