@@ -1,5 +1,6 @@
 import {
   type CSSProperties,
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -14,7 +15,7 @@ import {
   type ThemePresetName,
   type VisualPanel,
 } from "./theme";
-import { useMambaEar, type AudioFrame } from "./audio";\nimport { TrackConsole } from "./TrackConsole";
+import { EMPTY_FRAME, useMambaEar, type AudioFrame } from "./audio";\nimport { TrackConsole } from "./TrackConsole";
 
 const STORAGE_KEY = "blackmamba-mengine-ui-v1";
 
@@ -193,6 +194,8 @@ const App = () => {
   );
   const [labels, setLabels] = useState<PanelLabels>(stored?.labels ?? DEFAULT_LABELS);
   const [mainView, setMainView] = useState<VisualPanel>(stored?.mainView ?? "spectrogram");
+  const [playerFrame, setPlayerFrame] = useState<AudioFrame>(EMPTY_FRAME);
+  const [playerActive, setPlayerActive] = useState(false);
   const [activity, setActivity] = useState<ActivityItem[]>([
     { id: 1, time: "READY", action: "THEME ENGINE", detail: "UI state loaded" },
     { id: 2, time: "READY", action: "MAIN VIEW", detail: "Live preview online" },
@@ -202,6 +205,24 @@ const App = () => {
   const cssVariables = useMemo(
     () => cssVariablesFromColors(colors) as CSSProperties,
     [colors],
+  );
+
+  const activeFrame = playerActive ? playerFrame : ear.frame;
+  const inputState =
+    playerActive && ear.isActive
+      ? "PLAYER + MIC"
+      : playerActive
+        ? "PLAYER"
+        : ear.isActive
+          ? "MIC"
+          : "READY";
+
+  const handlePlayerFrame = useCallback(
+    (frame: AudioFrame, active: boolean) => {
+      setPlayerFrame(frame);
+      setPlayerActive(active);
+    },
+    [],
   );
 
   useEffect(() => {
@@ -278,7 +299,9 @@ const App = () => {
           <button className="audio-pill" onClick={toggleAudio}>
             {ear.isActive ? "STOP MIC" : "START MIC"}
           </button>
-          <span className="status-dot">{ear.isActive ? "MAMBA EAR · LIVE" : "LIVE UI"}</span>
+          <span className="status-dot">
+            {inputState === "READY" ? "LIVE UI" : `MAMBA EAR · ${inputState}`}
+          </span>
           {ear.error ? <span className="audio-error">{ear.error}</span> : null}
         </div>
       </header>
@@ -304,14 +327,14 @@ const App = () => {
                 <h2>{labels[mainView]}</h2>
               </div>
               <div className="monitor-meta">
-                <span>{ear.frame.sampleRate ? `${(ear.frame.sampleRate / 1000).toFixed(1)} kHz` : "48 kHz"}</span>
-                <span>RMS {ear.frame.rms.toFixed(3)}</span>
-                <span>{ear.frame.dominantFrequency ? `${ear.frame.dominantFrequency.toFixed(1)} Hz` : "AUTO"}</span>
+                <span>{activeFrame.sampleRate ? `${(activeFrame.sampleRate / 1000).toFixed(1)} kHz` : "48 kHz"}</span>
+                <span>RMS {activeFrame.rms.toFixed(3)}</span>
+                <span>{activeFrame.dominantFrequency ? `${activeFrame.dominantFrequency.toFixed(1)} Hz` : "AUTO"}</span>
               </div>
             </div>
-            <div className={`visual visual-${mainView}`}>{renderVisual(mainView, ear.frame)}</div>
+            <div className={`visual visual-${mainView}`}>{renderVisual(mainView, activeFrame)}</div>
             <div className="monitor-footer">
-              <span>INPUT · {ear.isActive ? "MIC LIVE" : "READY"}</span>
+              <span>INPUT · {inputState}</span>
               <span>ENGINE · MAMBA EAR + THEME CONTROL</span>
               <span>FPS · 60</span>
             </div>
@@ -328,12 +351,15 @@ const App = () => {
                   <span>{labels[view]}</span>
                   <small>EXPAND</small>
                 </div>
-                <div className={`mini-visual visual-${view}`}>{renderVisual(view, ear.frame)}</div>
+                <div className={`mini-visual visual-${view}`}>{renderVisual(view, activeFrame)}</div>
               </button>
             ))}
           </div>
 
-          <TrackConsole onActivity={log} />\n\n          <section className="activity-panel">
+          <TrackConsole
+            onActivity={log}
+            onPlayerFrame={handlePlayerFrame}
+          />\n\n          <section className="activity-panel">
             <div className="section-title">
               <span>ACTIVITY</span>
               <small>AUTOMATIC UI FEEDBACK</small>
