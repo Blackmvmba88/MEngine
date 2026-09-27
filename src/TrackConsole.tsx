@@ -17,68 +17,31 @@ type Props = {
 };
 
 const INITIAL_METADATA: TrackMetadata = {
-  title: "Frequency",
+  title: "Select a track",
   artist: "Iyari Gomez",
   releaseType: "single",
-  album: "Frequency",
-  genre: "Reggae",
-  style: "Virtuoso Fast Reggae / Operatic Vocal",
-  motto: "Resonate beyond the limit",
+  genre: "",
+  style: "",
+  motto: "",
   label: "BlackMamba Records",
   composer: "Iyari Gomez",
   producer: "Iyari Gomez",
-  releaseDate: "2026-09-27",
-  copyright: "© 2026 BlackMamba Records",
-  language: "English",
+  releaseDate: "",
+  copyright: "",
+  language: undefined,
   explicit: false,
 };
 
 const INITIAL_TRACK: TrackPackage = {
-  id: "frequency-demo",
+  id: "unselected",
   metadata: INITIAL_METADATA,
-  assets: {
-    audio: { path: "Frequency.wav", mimeType: "audio/wav" },
-    coverSquare: { path: "Frequency-cover-1x1.png", width: 3000, height: 3000 },
-    coverPanoramic: { path: "Frequency-cover-wide.png", width: 1920, height: 1080 },
-    video: { path: "Frequency-video.mp4", mimeType: "video/mp4" },
-  },
-  technical: {
-    bpm: 148,
-    bpmConfidence: 0.94,
-    key: "F#",
-    mode: "minor",
-    energy: 0.91,
-    wpm: 164,
-    tempoStability: 0.96,
-    rhythmicComplexity: 0.82,
-    danceability: 0.87,
-    bassWeight: 0.79,
-    harmonicDensity: 0.84,
-  },
+  assets: {},
+  technical: {},
   audience: {
-    playsLifetime: 22481,
-    plays30d: 4208,
-    plays7d: 1391,
-    playsToday: 187,
-    likes: 468,
-    comments: 21,
-    reposts: 36,
-    ageDays: 18,
+    playsLifetime: 0,
   },
   ratings: {
-    myRating: 5,
-    vectors: {
-      explosiveness: 0.92,
-      popularity: 0.84,
-      engagement: 0.71,
-      momentum: 0.88,
-      longevity: 0.54,
-      energy: 0.91,
-      styleStrength: 0.97,
-      originality: 0.90,
-      rhythmicComplexity: 0.82,
-      danceability: 0.87,
-    },
+    vectors: {},
   },
 };
 
@@ -127,6 +90,14 @@ export const TrackConsole = ({ onActivity }: Props) => {
   const rebuildCatalog = (tracks: TrackPackage[], files: FileCandidate[]) => {
     const report = buildCatalogReport(tracks, files);
     setCatalogReport(report);
+    const selected =
+      report.tracks.find((record) => record.track.id === track.id) ??
+      report.tracks[0];
+    if (selected) {
+      setTrack(selected.track);
+      setDistributionState("idle");
+      setDistributionDetail("");
+    }
     onActivity?.(
       "CATALOG SCAN",
       `${report.tracks.length} tracks · ${report.ready.length} ready · ${report.blocked.length} blocked · ${report.needsReview.length} review`,
@@ -195,6 +166,17 @@ export const TrackConsole = ({ onActivity }: Props) => {
     }
   };
 
+  const selectCatalogTrack = (trackId: string) => {
+    const selected = catalogReport?.tracks.find(
+      (record) => record.track.id === trackId,
+    );
+    if (!selected) return;
+    setTrack(selected.track);
+    setDistributionState("idle");
+    setDistributionDetail("");
+    onActivity?.("TRACK", selected.track.metadata.title);
+  };
+
   const setMetadata = <K extends keyof TrackMetadata>(
     key: K,
     value: TrackMetadata[K],
@@ -203,6 +185,13 @@ export const TrackConsole = ({ onActivity }: Props) => {
       ...current,
       metadata: { ...current.metadata, [key]: value },
     }));
+    setCatalogTracks((current) =>
+      current.map((item) =>
+        item.id === track.id
+          ? { ...item, metadata: { ...item.metadata, [key]: value } }
+          : item,
+      ),
+    );
   };
 
   const setMyRating = (rating: 1 | 2 | 3 | 4 | 5) => {
@@ -210,6 +199,13 @@ export const TrackConsole = ({ onActivity }: Props) => {
       ...current,
       ratings: { ...current.ratings, myRating: rating },
     }));
+    setCatalogTracks((current) =>
+      current.map((item) =>
+        item.id === track.id
+          ? { ...item, ratings: { ...item.ratings, myRating: rating } }
+          : item,
+      ),
+    );
     onActivity?.("MY RATING", `${rating}/5 for ${track.metadata.title}`);
   };
 
@@ -307,6 +303,25 @@ export const TrackConsole = ({ onActivity }: Props) => {
         ) : (
           <span className="catalog-import-hint">Manifest + assets → identity → missing state → gate</span>
         )}
+        {catalogReport?.tracks.length ? (
+          <select
+            className="catalog-track-select"
+            value={
+              catalogReport.tracks.some((record) => record.track.id === track.id)
+                ? track.id
+                : catalogReport.tracks[0].track.id
+            }
+            onChange={(event) => selectCatalogTrack(event.target.value)}
+            aria-label="Select catalog track"
+          >
+            {catalogReport.tracks.map((record) => (
+              <option value={record.track.id} key={record.track.id}>
+                {record.track.metadata.title}
+                {record.readyForDistribution ? " · READY" : " · INCOMPLETE"}
+              </option>
+            ))}
+          </select>
+        ) : null}
         {importError ? <span className="catalog-import-error">{importError}</span> : null}
       </div>
 
