@@ -91,6 +91,7 @@ explosiveness, longevity or audience response.
 | Source | Bring into MEngine |
 | --- | --- |
 | MEngine | Canonical UI, MambaSpec, visual analyzers |
+| MusicaSoundcloud | Canonical library IDs, verified SoundCloud cotejo, platform metrics |
 | suno-suite | Catalog, manifests, streaming, QA, distribution preparation |
 | reproductornuevo | Player, playlist, ID3 metadata, subtitles/translation, media tools |
 | Rockhero | BPM, beat, key, chord, FFT and energy analysis |
@@ -145,3 +146,15 @@ That event stream is the bridge to BlackMamba Automator/WARPBLACK.
 
 Next integrations should consume these contracts instead of creating another
 parallel player schema.
+
+
+## Catalog import priority
+
+MEngine accepts both existing catalog families:
+
+1. BlackMamba canonical `library.json` (`{ tracks: [...] }`) — preferred when available because it preserves `localTrackId`.
+2. Suno Suite `suno_manifest.json` (array) — imported as a provisional catalog and enriched by the identity resolver.
+
+Verified SoundCloud cotejo is applied by `localTrackId` first, then platform metrics
+join by `soundcloudId`. Title matching is only a fallback and ambiguous duplicate
+titles are not silently merged.
