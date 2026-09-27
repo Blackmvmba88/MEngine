@@ -14,6 +14,7 @@ import {
   type ThemePresetName,
   type VisualPanel,
 } from "./theme";
+import { useMambaEar, type AudioFrame } from "./audio";
 
 const STORAGE_KEY = "blackmamba-mengine-ui-v1";
 
@@ -57,82 +58,104 @@ const readStoredConfig = (): StoredConfig | null => {
   }
 };
 
-const WaveformVisual = () => (
-  <svg className="viz-svg waveform-svg" viewBox="0 0 1000 300" preserveAspectRatio="none">
-    <defs>
-      <linearGradient id="waveGradient" x1="0" x2="1">
-        <stop offset="0" stopColor="var(--bm-waveform)" stopOpacity="0.35" />
-        <stop offset="0.5" stopColor="var(--bm-waveform)" />
-        <stop offset="1" stopColor="var(--bm-waveform)" stopOpacity="0.35" />
-      </linearGradient>
-    </defs>
-    <path
-      className="wave-shadow"
-      d="M0 150 C35 148 45 80 75 150 S120 220 150 150 S185 112 220 150 S255 190 285 150 S320 28 360 150 S405 262 445 150 S480 94 520 150 S560 200 600 150 S635 60 675 150 S715 238 755 150 S805 116 845 150 S890 184 925 150 S965 82 1000 150"
-    />
-    <path
-      className="wave-line"
-      d="M0 150 C35 148 45 80 75 150 S120 220 150 150 S185 112 220 150 S255 190 285 150 S320 28 360 150 S405 262 445 150 S480 94 520 150 S560 200 600 150 S635 60 675 150 S715 238 755 150 S805 116 845 150 S890 184 925 150 S965 82 1000 150"
-    />
-  </svg>
-);
+const WaveformVisual = ({ frame }: { frame: AudioFrame }) => {
+  if (!frame.waveform.length) {
+    return (
+      <svg className="viz-svg waveform-svg" viewBox="0 0 1000 300" preserveAspectRatio="none">
+        <path
+          className="wave-line"
+          d="M0 150 C35 148 45 80 75 150 S120 220 150 150 S185 112 220 150 S255 190 285 150 S320 28 360 150 S405 262 445 150 S480 94 520 150 S560 200 600 150 S635 60 675 150 S715 238 755 150 S805 116 845 150 S890 184 925 150 S965 82 1000 150"
+        />
+      </svg>
+    );
+  }
 
-const FFTVisual = () => (
-  <div className="fft-bars" aria-hidden="true">
-    {Array.from({ length: 56 }, (_, index) => {
-      const height = 20 + ((index * 37 + index * index * 11) % 76);
-      return (
+  const points = frame.waveform
+    .map((sample, index) => {
+      const x = (index / Math.max(1, frame.waveform.length - 1)) * 1000;
+      const y = 150 - sample * 135;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  return (
+    <svg className="viz-svg waveform-svg" viewBox="0 0 1000 300" preserveAspectRatio="none">
+      <polyline className="wave-line" points={points} fill="none" />
+    </svg>
+  );
+};
+
+const FFTVisual = ({ frame }: { frame: AudioFrame }) => {
+  const values = frame.spectrum.length
+    ? frame.spectrum.slice(0, 56)
+    : Array.from({ length: 56 }, (_, index) => (20 + ((index * 37 + index * index * 11) % 76)) / 100);
+
+  return (
+    <div className="fft-bars" aria-hidden="true">
+      {values.map((value, index) => (
         <span
           key={index}
           style={{
-            height: `${height}%`,
-            animationDelay: `${-(index % 12) * 0.07}s`,
+            height: `${Math.max(4, value * 100)}%`,
+            animationDelay: frame.spectrum.length ? "0s" : `${-(index % 12) * 0.07}s`,
           }}
         />
-      );
-    })}
-  </div>
-);
+      ))}
+    </div>
+  );
+};
 
-const SpectrogramVisual = () => (
-  <div className="spectrogram" aria-hidden="true">
-    <div className="spectrogram-scan" />
-    {Array.from({ length: 12 }, (_, index) => (
-      <span
-        key={index}
-        style={{
-          left: `${4 + index * 8}%`,
-          height: `${25 + ((index * 31) % 65)}%`,
-          opacity: 0.18 + (index % 4) * 0.1,
-        }}
-      />
-    ))}
-  </div>
-);
+const SpectrogramVisual = ({ frame }: { frame: AudioFrame }) => {
+  const values = frame.spectrum.length
+    ? Array.from({ length: 12 }, (_, index) => frame.spectrum[index * 5] ?? 0)
+    : Array.from({ length: 12 }, (_, index) => (25 + ((index * 31) % 65)) / 100);
 
-const PitchVisual = () => (
+  return (
+    <div className="spectrogram" aria-hidden="true">
+      <div className="spectrogram-scan" />
+      {values.map((value, index) => (
+        <span
+          key={index}
+          style={{
+            left: `${4 + index * 8}%`,
+            height: `${Math.max(6, value * 100)}%`,
+            opacity: 0.18 + Math.min(0.5, value * 0.55),
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+const PitchVisual = ({ frame }: { frame: AudioFrame }) => (
   <div className="pitch-wrap">
-    <div className="pitch-note">A4</div>
-    <div className="pitch-cents">+03 cents</div>
+    <div className="pitch-note">{frame.note ?? "—"}</div>
+    <div className="pitch-cents">
+      {frame.cents === null ? "WAITING FOR PITCH" : `${frame.cents >= 0 ? "+" : ""}${frame.cents} cents`}
+    </div>
     <svg className="viz-svg pitch-svg" viewBox="0 0 1000 300" preserveAspectRatio="none">
-      <path
-        d="M0 185 C70 180 120 190 170 165 S275 125 330 150 S430 205 505 145 S625 85 690 120 S790 188 850 142 S930 105 1000 122"
-      />
+      <path d="M0 185 C70 180 120 190 170 165 S275 125 330 150 S430 205 505 145 S625 85 690 120 S790 188 850 142 S930 105 1000 122" />
       <line x1="0" y1="150" x2="1000" y2="150" />
     </svg>
   </div>
 );
 
-const HarmonicsVisual = () => (
-  <div className="harmonic-bars" aria-hidden="true">
-    {Array.from({ length: 16 }, (_, index) => (
-      <div className="harmonic-column" key={index}>
-        <span style={{ height: `${92 / (1 + index * 0.18)}%` }} />
-        <small>{index + 1}</small>
-      </div>
-    ))}
-  </div>
-);
+const HarmonicsVisual = ({ frame }: { frame: AudioFrame }) => {
+  const values = frame.harmonics.length
+    ? frame.harmonics
+    : Array.from({ length: 16 }, (_, index) => 0.92 / (1 + index * 0.18));
+
+  return (
+    <div className="harmonic-bars" aria-hidden="true">
+      {values.map((value, index) => (
+        <div className="harmonic-column" key={index}>
+          <span style={{ height: `${Math.max(2, value * 100)}%` }} />
+          <small>{index + 1}</small>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const PhaseVisual = () => (
   <div className="phase-scope" aria-hidden="true">
@@ -144,18 +167,18 @@ const PhaseVisual = () => (
   </div>
 );
 
-const renderVisual = (view: VisualPanel) => {
+const renderVisual = (view: VisualPanel, frame: AudioFrame) => {
   switch (view) {
     case "waveform":
-      return <WaveformVisual />;
+      return <WaveformVisual frame={frame} />;
     case "fft":
-      return <FFTVisual />;
+      return <FFTVisual frame={frame} />;
     case "spectrogram":
-      return <SpectrogramVisual />;
+      return <SpectrogramVisual frame={frame} />;
     case "pitch":
-      return <PitchVisual />;
+      return <PitchVisual frame={frame} />;
     case "harmonics":
-      return <HarmonicsVisual />;
+      return <HarmonicsVisual frame={frame} />;
     case "phase":
       return <PhaseVisual />;
   }
@@ -163,6 +186,7 @@ const renderVisual = (view: VisualPanel) => {
 
 const App = () => {
   const stored = useMemo(readStoredConfig, []);
+  const ear = useMambaEar();
   const [preset, setPreset] = useState<ThemePresetName>(stored?.preset ?? "dark");
   const [colors, setColors] = useState<ThemeColors>(
     stored?.colors ?? THEME_PRESETS.dark.colors,
@@ -218,6 +242,17 @@ const App = () => {
     log("MAIN VIEW", labels[view]);
   };
 
+  const toggleAudio = () => {
+    if (ear.isActive) {
+      ear.stop();
+      log("MAMBA EAR", "Microphone stopped");
+      return;
+    }
+
+    void ear.start();
+    log("MAMBA EAR", "Microphone capture requested");
+  };
+
   const reset = () => {
     setPreset("dark");
     setColors({ ...THEME_PRESETS.dark.colors });
@@ -240,7 +275,11 @@ const App = () => {
         <div className="identity-strip">
           <span>BLACKMAMBA RECORDS</span>
           <span>IYARI GOMEZ</span>
-          <span className="status-dot">LIVE UI</span>
+          <button className="audio-pill" onClick={toggleAudio}>
+            {ear.isActive ? "STOP MIC" : "START MIC"}
+          </button>
+          <span className="status-dot">{ear.isActive ? "MAMBA EAR · LIVE" : "LIVE UI"}</span>
+          {ear.error ? <span className="audio-error">{ear.error}</span> : null}
         </div>
       </header>
 
@@ -265,15 +304,15 @@ const App = () => {
                 <h2>{labels[mainView]}</h2>
               </div>
               <div className="monitor-meta">
-                <span>48 kHz</span>
-                <span>24 bit</span>
-                <span>AUTO</span>
+                <span>{ear.frame.sampleRate ? `${(ear.frame.sampleRate / 1000).toFixed(1)} kHz` : "48 kHz"}</span>
+                <span>RMS {ear.frame.rms.toFixed(3)}</span>
+                <span>{ear.frame.dominantFrequency ? `${ear.frame.dominantFrequency.toFixed(1)} Hz` : "AUTO"}</span>
               </div>
             </div>
-            <div className={`visual visual-${mainView}`}>{renderVisual(mainView)}</div>
+            <div className={`visual visual-${mainView}`}>{renderVisual(mainView, ear.frame)}</div>
             <div className="monitor-footer">
-              <span>INPUT · READY</span>
-              <span>ENGINE · THEME CONTROL</span>
+              <span>INPUT · {ear.isActive ? "MIC LIVE" : "READY"}</span>
+              <span>ENGINE · MAMBA EAR + THEME CONTROL</span>
               <span>FPS · 60</span>
             </div>
           </section>
@@ -289,7 +328,7 @@ const App = () => {
                   <span>{labels[view]}</span>
                   <small>EXPAND</small>
                 </div>
-                <div className={`mini-visual visual-${view}`}>{renderVisual(view)}</div>
+                <div className={`mini-visual visual-${view}`}>{renderVisual(view, ear.frame)}</div>
               </button>
             ))}
           </div>
