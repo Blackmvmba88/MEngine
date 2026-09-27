@@ -92,8 +92,16 @@ export type TrackRatings = {
   vectors: RatingVectors;
 };
 
+export type TrackSources = {
+  localTrackId?: string;
+  sunoId?: string;
+  soundcloudId?: string;
+  soundcloudUrl?: string;
+};
+
 export type TrackPackage = {
   id: string;
+  sources?: TrackSources;
   metadata: TrackMetadata;
   assets: TrackAssets;
   technical: TechnicalVector;
