@@ -6,6 +6,9 @@ import {
   type TrackPackage,
 } from "./catalog";
 import { ENGINE_MODES, type EngineMode } from "./capabilityRegistry";
+import { buildCatalogReport, type CatalogReport } from "./catalogPipeline";
+import { tracksFromSunoManifest, type SunoManifestRow } from "./adapters/sunoSuite";
+import type { FileCandidate } from "./identityResolver";
 
 type Props = {
   onActivity?: (action: string, detail: string) => void;
@@ -97,6 +100,10 @@ export const TrackConsole = ({ onActivity }: Props) => {
     },
   }));
   const [proInstrument, setProInstrument] = useState("Guitar");
+  const [catalogTracks, setCatalogTracks] = useState<TrackPackage[]>([]);
+  const [assetCandidates, setAssetCandidates] = useState<FileCandidate[]>([]);
+  const [catalogReport, setCatalogReport] = useState<CatalogReport | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const audienceRating = useMemo(
     () => scoreAudienceRating(track.ratings.vectors),
@@ -156,6 +163,37 @@ export const TrackConsole = ({ onActivity }: Props) => {
         >
           {gate.ready ? "DISTRIBUTE" : `DISTRIBUTE · ${gate.missingRequired.length} MISSING`}
         </button>
+      </div>
+
+      <div className="catalog-import-bar">
+        <label className="catalog-import-button">
+          IMPORT SUNO MANIFEST
+          <input
+            type="file"
+            accept=".json,application/json"
+            onChange={(event) => void importManifest(event.target.files?.[0])}
+          />
+        </label>
+        <label className="catalog-import-button">
+          SCAN ASSETS
+          <input
+            type="file"
+            multiple
+            accept="audio/*,image/*,video/*,.lrc,.txt,.srt,.vtt"
+            onChange={(event) => scanAssets(event.target.files)}
+          />
+        </label>
+        {catalogReport ? (
+          <div className="catalog-import-stats">
+            <span><strong>{catalogReport.tracks.length}</strong> TRACKS</span>
+            <span><strong>{catalogReport.ready.length}</strong> READY</span>
+            <span><strong>{catalogReport.blocked.length}</strong> BLOCKED</span>
+            <span><strong>{catalogReport.needsReview.length}</strong> REVIEW</span>
+          </div>
+        ) : (
+          <span className="catalog-import-hint">Manifest + assets → identity → missing state → gate</span>
+        )}
+        {importError ? <span className="catalog-import-error">{importError}</span> : null}
       </div>
 
       <nav className="engine-mode-tabs" aria-label="Music Engine mode">
