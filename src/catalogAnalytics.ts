@@ -1,6 +1,7 @@
-import type {
-  RatingVectors,
-  TrackPackage,
+import {
+  scoreAudienceRating,
+  type RatingVectors,
+  type TrackPackage,
 } from "./catalog";
 
 type RawAudienceVector = {
@@ -25,6 +26,8 @@ const percentileMap = (
   field: keyof Omit<RawAudienceVector, "id" | "style">,
 ): Map<string, number> => {
   if (!rows.length) return new Map();
+  if (rows.length === 1) return new Map([[rows[0].id, 1]]);
+
   const values = rows.map((row) => row[field]).sort((a, b) => a - b);
   return new Map(
     rows.map((row) => {
@@ -35,7 +38,8 @@ const percentileMap = (
         if (candidate < value) below += 1;
         else if (candidate === value) equal += 1;
       }
-      const percentile = (below + Math.max(0, equal - 1) / 2) / Math.max(1, values.length - 1);
+      const midpointRank = below + Math.max(0, equal - 1) / 2;
+      const percentile = midpointRank / (values.length - 1);
       return [row.id, Math.max(0, Math.min(1, percentile))];
     }),
   );
@@ -52,8 +56,10 @@ const rawRow = (track: TrackPackage): RawAudienceVector => {
   const reposts = Math.max(0, a.reposts ?? 0);
 
   const lifetimeDaily = plays / ageDays;
-  const recentDaily7 = a.plays7d === undefined ? lifetimeDaily : plays7d / 7;
-  const recentDaily30 = a.plays30d === undefined ? lifetimeDaily : plays30d / 30;
+  const recentDaily7 =
+    a.plays7d === undefined ? lifetimeDaily : plays7d / 7;
+  const recentDaily30 =
+    a.plays30d === undefined ? lifetimeDaily : plays30d / 30;
 
   const interactions = likes + comments * 2 + reposts * 1.5;
   const engagement = interactions / (plays + 100);
@@ -172,3 +178,107 @@ export const rankTracksByVector = (
       (b.ratings.vectors[vector] ?? 0) -
       (a.ratings.vectors[vector] ?? 0),
   );
+
+export type CatalogRankMetric =
+  | "audienceRating"
+  | "myRating"
+  | "plays"
+  | "likes"
+  | "comments"
+  | "reposts"
+  | "explosiveness"
+  | "momentum"
+  | "longevity"
+  | "age"
+  | "ageAdjustedPerformance"
+  | "stylePerformance"
+  | "engagement"
+  | "popularity"
+  | "bpm"
+  | "wpm"
+  | "energy"
+  | "danceability"
+  | "rhythmicComplexity"
+  | "styleStrength"
+  | "originality";
+
+export const CATALOG_RANK_LABELS: Record<CatalogRankMetric, string> = {
+  audienceRating: "Audience Rating",
+  myRating: "My Rating",
+  plays: "Plays",
+  likes: "Likes",
+  comments: "Comments",
+  reposts: "Reposts",
+  explosiveness: "Explosiveness",
+  momentum: "Momentum",
+  longevity: "Longevity",
+  age: "Age",
+  ageAdjustedPerformance: "Age-adjusted performance",
+  stylePerformance: "Style performance",
+  engagement: "Engagement",
+  popularity: "Popularity",
+  bpm: "BPM",
+  wpm: "WPM",
+  energy: "Energy",
+  danceability: "Danceability",
+  rhythmicComplexity: "Rhythmic complexity",
+  styleStrength: "Style strength",
+  originality: "Originality",
+};
+
+export const catalogRankValue = (
+  track: TrackPackage,
+  metric: CatalogRankMetric,
+): number => {
+  switch (metric) {
+    case "audienceRating":
+      return track.ratings.audienceRating ?? scoreAudienceRating(track.ratings.vectors);
+    case "myRating":
+      return track.ratings.myRating ?? 0;
+    case "plays":
+      return track.audience.playsLifetime ?? 0;
+    case "likes":
+      return track.audience.likes ?? 0;
+    case "comments":
+      return track.audience.comments ?? 0;
+    case "reposts":
+      return track.audience.reposts ?? 0;
+    case "bpm":
+      return track.technical.bpm ?? 0;
+    case "wpm":
+      return track.technical.wpm ?? 0;
+    case "energy":
+      return track.technical.energy ?? track.ratings.vectors.energy ?? 0;
+    default:
+      return track.ratings.vectors[metric] ?? 0;
+  }
+};
+
+export const rankTracks = (
+  tracks: TrackPackage[],
+  metric: CatalogRankMetric,
+): TrackPackage[] =>
+  [...tracks].sort((a, b) => {
+    const delta = catalogRankValue(b, metric) - catalogRankValue(a, metric);
+    if (delta !== 0) return delta;
+    return a.metadata.title.localeCompare(b.metadata.title);
+  });
+
+export const formatCatalogRankValue = (
+  track: TrackPackage,
+  metric: CatalogRankMetric,
+): string => {
+  const value = catalogRankValue(track, metric);
+  if (["explosiveness", "momentum", "longevity", "ageAdjustedPerformance", "stylePerformance", "engagement", "popularity", "energy", "danceability", "rhythmicComplexity", "styleStrength", "originality"].includes(metric)) {
+    return `${Math.round(value * 100)}%`;
+  }
+  if (metric === "audienceRating" || metric === "myRating") {
+    return `${value.toFixed(metric === "myRating" ? 0 : 2)}/5`;
+  }
+  if (metric === "age") {
+    return `${track.audience.ageDays ?? 0} d`;
+  }
+  if (metric === "bpm") return `${Math.round(value)} BPM`;
+  if (metric === "wpm") return `${Math.round(value)} WPM`;
+  return new Intl.NumberFormat().format(Math.round(value));
+};
