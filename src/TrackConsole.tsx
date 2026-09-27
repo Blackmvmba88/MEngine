@@ -11,6 +11,8 @@ import { tracksFromSunoManifest, type SunoManifestRow } from "./adapters/sunoSui
 import { tracksFromCanonicalLibrary, type CanonicalLibrary } from "./adapters/canonicalLibrary";
 import type { FileCandidate } from "./identityResolver";
 import { handoffDistribution } from "./distribution";
+import { applyAudienceVectors } from "./catalogAnalytics";
+import { applySoundCloudCotejo, applySoundCloudMetrics, type SoundCloudCotejoMatch, type SoundCloudMetricRow } from "./adapters/soundcloud";
 
 type Props = {
   onActivity?: (action: string, detail: string) => void;
@@ -177,35 +179,82 @@ export const TrackConsole = ({ onActivity }: Props) => {
     onActivity?.("TRACK", selected.track.metadata.title);
   };
 
+  const syncCatalogTrack = (updated: TrackPackage) => {
+    const nextTracks = catalogTracks.map((item) =>
+      item.id === updated.id ? updated : item,
+    );
+    if (!nextTracks.length) return;
+    setCatalogTracks(nextTracks);
+    setCatalogReport(buildCatalogReport(nextTracks, assetCandidates));
+  };
+
+  const importSoundCloud = async (file: File | undefined) => {
+    if (!file || !catalogTracks.length) return;
+    setImportError(null);
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+      let nextTracks = catalogTracks;
+      let source = "SOUNDCLOUD";
+
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        Array.isArray((parsed as { matches?: unknown[] }).matches)
+      ) {
+        nextTracks = applySoundCloudCotejo(
+          nextTracks,
+          (parsed as { matches: SoundCloudCotejoMatch[] }).matches,
+        );
+        source = "SOUNDCLOUD COTEJO";
+      } else {
+        let rows: SoundCloudMetricRow[] | null = null;
+        if (Array.isArray(parsed)) {
+          rows = parsed as SoundCloudMetricRow[];
+        } else if (parsed && typeof parsed === "object") {
+          const candidate = parsed as {
+            tracks?: SoundCloudMetricRow[];
+            topTracksByLifetimePlays?: SoundCloudMetricRow[];
+          };
+          rows = candidate.tracks ?? candidate.topTracksByLifetimePlays ?? null;
+        }
+        if (!rows) {
+          throw new Error("Unsupported SoundCloud JSON");
+        }
+        nextTracks = applySoundCloudMetrics(nextTracks, rows).tracks;
+        nextTracks = applyAudienceVectors(nextTracks);
+        source = "SOUNDCLOUD METRICS";
+      }
+
+      setCatalogTracks(nextTracks);
+      setCatalogSource(source);
+      rebuildCatalog(nextTracks, assetCandidates);
+      onActivity?.("SOUNDCLOUD", `${source} imported`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "SoundCloud import failed";
+      setImportError(message);
+      onActivity?.("SOUNDCLOUD ERROR", message);
+    }
+  };
+
   const setMetadata = <K extends keyof TrackMetadata>(
     key: K,
     value: TrackMetadata[K],
   ) => {
-    setTrack((current) => ({
-      ...current,
-      metadata: { ...current.metadata, [key]: value },
-    }));
-    setCatalogTracks((current) =>
-      current.map((item) =>
-        item.id === track.id
-          ? { ...item, metadata: { ...item.metadata, [key]: value } }
-          : item,
-      ),
-    );
+    const updated: TrackPackage = {
+      ...track,
+      metadata: { ...track.metadata, [key]: value },
+    };
+    setTrack(updated);
+    syncCatalogTrack(updated);
   };
 
   const setMyRating = (rating: 1 | 2 | 3 | 4 | 5) => {
-    setTrack((current) => ({
-      ...current,
-      ratings: { ...current.ratings, myRating: rating },
-    }));
-    setCatalogTracks((current) =>
-      current.map((item) =>
-        item.id === track.id
-          ? { ...item, ratings: { ...item.ratings, myRating: rating } }
-          : item,
-      ),
-    );
+    const updated: TrackPackage = {
+      ...track,
+      ratings: { ...track.ratings, myRating: rating },
+    };
+    setTrack(updated);
+    syncCatalogTrack(updated);
     onActivity?.("MY RATING", `${rating}/5 for ${track.metadata.title}`);
   };
 
@@ -281,6 +330,15 @@ export const TrackConsole = ({ onActivity }: Props) => {
             type="file"
             accept=".json,application/json"
             onChange={(event) => void importCatalog(event.target.files?.[0])}
+          />
+        </label>
+        <label className="catalog-import-button">
+          IMPORT SOUNDCLOUD
+          <input
+            type="file"
+            accept=".json,application/json"
+            disabled={!catalogTracks.length}
+            onChange={(event) => void importSoundCloud(event.target.files?.[0])}
           />
         </label>
         <label className="catalog-import-button">
