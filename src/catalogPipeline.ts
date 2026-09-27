@@ -14,6 +14,7 @@ import {
 export type CatalogRecord = {
   track: TrackPackage;
   identity?: IdentityMatch;
+  identityAmbiguous: boolean;
   events: MissingStateEvent[];
   readyForDistribution: boolean;
 };
@@ -48,19 +49,28 @@ export const buildCatalogReport = (
   tracks: TrackPackage[],
   files: FileCandidate[] = [],
 ): CatalogReport => {
-  const identities = resolveTrackIdentities(
-    files,
-    tracks.map((track) => ({
+  const keyCounts = new Map<string, number>();
+  for (const track of tracks) {
+    const key = trackKey(track);
+    keyCounts.set(key, (keyCounts.get(key) ?? 0) + 1);
+  }
+
+  const uniqueAnchors = tracks
+    .filter((track) => (keyCounts.get(trackKey(track)) ?? 0) === 1)
+    .map((track) => ({
       key: track.metadata.title,
       displayTitle: track.metadata.title,
-    })),
-  );
+    }));
+
+  const identities = resolveTrackIdentities(files, uniqueAnchors);
   const byKey = new Map(
     identities.map((identity) => [identity.key, identity]),
   );
 
   const records = tracks.map((source) => {
-    const identity = byKey.get(trackKey(source));
+    const key = trackKey(source);
+    const identityAmbiguous = (keyCounts.get(key) ?? 0) > 1;
+    const identity = identityAmbiguous ? undefined : byKey.get(key);
     const track = mergeIdentity(source, identity);
     const events = detectMissingState(track, {
       includeOptional: false,
@@ -71,6 +81,7 @@ export const buildCatalogReport = (
     return {
       track,
       identity,
+      identityAmbiguous,
       events,
       readyForDistribution,
     };
@@ -82,6 +93,7 @@ export const buildCatalogReport = (
     blocked: records.filter((record) => !record.readyForDistribution),
     needsReview: records.filter(
       (record) =>
+        record.identityAmbiguous ||
         record.identity?.confidence === "review" ||
         Boolean(record.identity?.unresolved.length),
     ),
@@ -97,11 +109,11 @@ export type AutomatorCatalogEvent = {
 
 export const toAutomatorEvents = (
   record: CatalogRecord,
-): AutomatorCatalogEvent[] =>
-  record.events.map((event) => ({
+): AutomatorCatalogEvent[] => {
+  const events = record.events.map((event) => ({
     kind: event.type,
-    project: "music-catalog",
-    source: "mengine",
+    project: "music-catalog" as const,
+    source: "mengine" as const,
     payload: {
       track_id: record.track.id,
       title: record.track.metadata.title,
@@ -111,3 +123,21 @@ export const toAutomatorEvents = (
       distribution_ready: record.readyForDistribution,
     },
   }));
+
+  if (record.identityAmbiguous) {
+    events.push({
+      kind: "track.identity.ambiguous",
+      project: "music-catalog",
+      source: "mengine",
+      payload: {
+        track_id: record.track.id,
+        title: record.track.metadata.title,
+        severity: "warning",
+        label: "Duplicate title requires ID/evidence review",
+        distribution_ready: record.readyForDistribution,
+      },
+    });
+  }
+
+  return events;
+};
