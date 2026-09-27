@@ -8,6 +8,7 @@ import {
 import { ENGINE_MODES, type EngineMode } from "./capabilityRegistry";
 import { buildCatalogReport, type CatalogReport } from "./catalogPipeline";
 import { tracksFromSunoManifest, type SunoManifestRow } from "./adapters/sunoSuite";
+import { tracksFromCanonicalLibrary, type CanonicalLibrary } from "./adapters/canonicalLibrary";
 import type { FileCandidate } from "./identityResolver";
 
 type Props = {
@@ -104,6 +105,7 @@ export const TrackConsole = ({ onActivity }: Props) => {
   const [assetCandidates, setAssetCandidates] = useState<FileCandidate[]>([]);
   const [catalogReport, setCatalogReport] = useState<CatalogReport | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [catalogSource, setCatalogSource] = useState<string>("");
 
   const audienceRating = useMemo(
     () => scoreAudienceRating(track.ratings.vectors),
@@ -167,11 +169,11 @@ export const TrackConsole = ({ onActivity }: Props) => {
 
       <div className="catalog-import-bar">
         <label className="catalog-import-button">
-          IMPORT SUNO MANIFEST
+          IMPORT CATALOG
           <input
             type="file"
             accept=".json,application/json"
-            onChange={(event) => void importManifest(event.target.files?.[0])}
+            onChange={(event) => void importCatalog(event.target.files?.[0])}
           />
         </label>
         <label className="catalog-import-button">
@@ -189,6 +191,7 @@ export const TrackConsole = ({ onActivity }: Props) => {
             <span><strong>{catalogReport.ready.length}</strong> READY</span>
             <span><strong>{catalogReport.blocked.length}</strong> BLOCKED</span>
             <span><strong>{catalogReport.needsReview.length}</strong> REVIEW</span>
+            {catalogSource ? <span><strong>{catalogSource}</strong></span> : null}
           </div>
         ) : (
           <span className="catalog-import-hint">Manifest + assets → identity → missing state → gate</span>
