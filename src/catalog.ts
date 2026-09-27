@@ -4,6 +4,7 @@ export type AssetRef = {
   width?: number;
   height?: number;
   durationSeconds?: number;
+  runtimeUrl?: string;
 };
 
 export type TrackAssets = {
