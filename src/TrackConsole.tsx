@@ -84,6 +84,12 @@ export const TrackConsole = ({ onActivity }: Props) => {
     [track],
   );
 
+  const currentCatalogRecord = useMemo(
+    () =>
+      catalogReport?.tracks.find((record) => record.track.id === track.id),
+    [catalogReport, track.id],
+  );
+
   const gate = useMemo(
     () =>
       evaluateDistributionGate({
@@ -107,6 +113,8 @@ export const TrackConsole = ({ onActivity }: Props) => {
 
   const rebuildCatalog = (tracks: TrackPackage[], files: FileCandidate[]) => {
     const report = buildCatalogReport(tracks, files);
+    const resolvedTracks = report.tracks.map((record) => record.track);
+    setCatalogTracks(resolvedTracks);
     setCatalogReport(report);
     const selected =
       report.tracks.find((record) => record.track.id === track.id) ??
@@ -370,6 +378,11 @@ export const TrackConsole = ({ onActivity }: Props) => {
           <span className="eyebrow">CATALOG / CURRENT TRACK</span>
           <h2>{track.metadata.title}</h2>
           <p>{track.metadata.artist} · {track.metadata.genre} · {track.metadata.style}</p>
+          {currentCatalogRecord?.identityAmbiguous ? (
+            <span className="identity-review-badge">IDENTITY REVIEW · DUPLICATE TITLE</span>
+          ) : currentCatalogRecord?.identity?.confidence === "review" ? (
+            <span className="identity-review-badge">IDENTITY REVIEW</span>
+          ) : null}
           {track.sources?.soundcloudUrl ? (
             <a
               className="source-link"
