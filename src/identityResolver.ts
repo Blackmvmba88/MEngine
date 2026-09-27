@@ -144,6 +144,7 @@ const attachAsset = (
     width: file.width,
     height: file.height,
     durationSeconds: file.durationSeconds,
+    runtimeUrl: file.runtimeUrl,
   };
   return true;
 };
