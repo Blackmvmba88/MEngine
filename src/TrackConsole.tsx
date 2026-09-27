@@ -11,7 +11,7 @@ import { tracksFromSunoManifest, type SunoManifestRow } from "./adapters/sunoSui
 import { tracksFromCanonicalLibrary, type CanonicalLibrary } from "./adapters/canonicalLibrary";
 import type { FileCandidate } from "./identityResolver";
 import { handoffDistribution } from "./distribution";
-import { applyAudienceVectors, CATALOG_RANK_LABELS, formatCatalogRankValue, rankTracks, type CatalogRankMetric } from "./catalogAnalytics";
+import { applyAudienceVectors, CATALOG_RANK_LABELS, formatCatalogRankValue, hasAudienceEvidence, rankTracks, type CatalogRankMetric } from "./catalogAnalytics";
 import { applySoundCloudCotejo, applySoundCloudMetrics, type SoundCloudCotejoMatch, type SoundCloudMetricRow } from "./adapters/soundcloud";
 
 type Props = {
@@ -77,15 +77,21 @@ export const TrackConsole = ({ onActivity }: Props) => {
   const [distributionDetail, setDistributionDetail] = useState<string>("");
 
   const audienceRating = useMemo(
-    () => scoreAudienceRating(track.ratings.vectors),
-    [track.ratings.vectors],
+    () =>
+      hasAudienceEvidence(track)
+        ? scoreAudienceRating(track.ratings.vectors)
+        : undefined,
+    [track],
   );
 
   const gate = useMemo(
     () =>
       evaluateDistributionGate({
         ...track,
-        ratings: { ...track.ratings, audienceRating },
+        ratings: {
+          ...track.ratings,
+          ...(audienceRating === undefined ? {} : { audienceRating }),
+        },
       }),
     [track, audienceRating],
   );
@@ -273,6 +279,29 @@ export const TrackConsole = ({ onActivity }: Props) => {
     onActivity?.("MODE", ENGINE_MODES[next].label);
   };
 
+  const exportCatalog = () => {
+    if (!catalogTracks.length) return;
+    const payload = {
+      schema: "blackmamba.mengine.catalog.v1",
+      exportedAt: new Date().toISOString(),
+      source: catalogSource || "MENGINE",
+      tracks: catalogTracks,
+    };
+    const blob = new Blob(
+      [JSON.stringify(payload, null, 2)],
+      { type: "application/json" },
+    );
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `blackmamba-mengine-catalog-${new Date()
+      .toISOString()
+      .slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    onActivity?.("CATALOG EXPORT", `${catalogTracks.length} tracks exported`);
+  };
+
   const distribute = async () => {
     if (!gate.ready || distributionState === "sending") return;
     setDistributionState("sending");
@@ -280,7 +309,10 @@ export const TrackConsole = ({ onActivity }: Props) => {
 
     const result = await handoffDistribution({
       ...track,
-      ratings: { ...track.ratings, audienceRating },
+      ratings: {
+        ...track.ratings,
+        ...(audienceRating === undefined ? {} : { audienceRating }),
+      },
     });
 
     if (result.ok) {
@@ -361,6 +393,13 @@ export const TrackConsole = ({ onActivity }: Props) => {
             onChange={(event) => void importSoundCloud(event.target.files?.[0])}
           />
         </label>
+        <button
+          className="catalog-action-button"
+          disabled={!catalogTracks.length}
+          onClick={exportCatalog}
+        >
+          EXPORT CATALOG
+        </button>
         <label className="catalog-import-button">
           SCAN ASSETS
           <input
@@ -461,8 +500,14 @@ export const TrackConsole = ({ onActivity }: Props) => {
 
         <div className="rating-card">
           <span>AUDIENCE RATING</span>
-          <strong className="rating-big">{audienceRating.toFixed(2)}/5</strong>
-          <small>Derived from audience vectors</small>
+          <strong className="rating-big">
+            {audienceRating === undefined ? "—" : `${audienceRating.toFixed(2)}/5`}
+          </strong>
+          <small>
+            {audienceRating === undefined
+              ? "No audience data imported"
+              : "Derived from audience vectors"}
+          </small>
         </div>
 
         <div className="rating-card">
