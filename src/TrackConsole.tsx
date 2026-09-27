@@ -10,6 +10,7 @@ import { buildCatalogReport, type CatalogReport } from "./catalogPipeline";
 import { tracksFromSunoManifest, type SunoManifestRow } from "./adapters/sunoSuite";
 import { tracksFromCanonicalLibrary, type CanonicalLibrary } from "./adapters/canonicalLibrary";
 import type { FileCandidate } from "./identityResolver";
+import { handoffDistribution } from "./distribution";
 
 type Props = {
   onActivity?: (action: string, detail: string) => void;
@@ -106,6 +107,8 @@ export const TrackConsole = ({ onActivity }: Props) => {
   const [catalogReport, setCatalogReport] = useState<CatalogReport | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [catalogSource, setCatalogSource] = useState<string>("");
+  const [distributionState, setDistributionState] = useState<"idle" | "sending" | "queued" | "error">("idle");
+  const [distributionDetail, setDistributionDetail] = useState<string>("");
 
   const audienceRating = useMemo(
     () => scoreAudienceRating(track.ratings.vectors),
@@ -141,12 +144,35 @@ export const TrackConsole = ({ onActivity }: Props) => {
     onActivity?.("MODE", ENGINE_MODES[next].label);
   };
 
-  const distribute = () => {
-    if (!gate.ready) return;
-    onActivity?.(
-      "DISTRIBUTE",
-      `${track.metadata.title} passed the distribution gate; explicit handoff required`,
+  const distribute = async () => {
+    if (!gate.ready || distributionState === "sending") return;
+    setDistributionState("sending");
+    setDistributionDetail("Sending explicit distribution request to Automator…");
+
+    const result = await handoffDistribution({
+      ...track,
+      ratings: { ...track.ratings, audienceRating },
+    });
+
+    if (result.ok) {
+      setDistributionState("queued");
+      setDistributionDetail(
+        result.jobId ? `Queued as ${result.jobId}` : "Queued in BlackMamba Automator",
+      );
+      onActivity?.(
+        "DISTRIBUTE",
+        `${track.metadata.title} queued for distribution bundle preparation`,
+      );
+      return;
+    }
+
+    setDistributionState("error");
+    setDistributionDetail(
+      result.reason === "automator_unreachable"
+        ? "Automator bridge is offline — run: bma serve"
+        : result.reason,
     );
+    onActivity?.("DISTRIBUTE ERROR", result.reason);
   };
 
   return (
@@ -159,12 +185,23 @@ export const TrackConsole = ({ onActivity }: Props) => {
         </div>
         <button
           className={`distribute-button ${gate.ready ? "ready" : ""}`}
-          disabled={!gate.ready}
-          onClick={distribute}
+          disabled={!gate.ready || distributionState === "sending"}
+          onClick={() => void distribute()}
           title={gate.ready ? "Eligible for explicit distribution handoff" : `${gate.missingRequired.length} required items missing`}
         >
-          {gate.ready ? "DISTRIBUTE" : `DISTRIBUTE · ${gate.missingRequired.length} MISSING`}
+          {distributionState === "sending"
+            ? "QUEUING…"
+            : distributionState === "queued"
+              ? "DISTRIBUTE · QUEUED"
+              : gate.ready
+                ? "DISTRIBUTE"
+                : `DISTRIBUTE · ${gate.missingRequired.length} MISSING`}
         </button>
+        {distributionDetail ? (
+          <div className={`distribution-status ${distributionState}`}>
+            {distributionDetail}
+          </div>
+        ) : null}
       </div>
 
       <div className="catalog-import-bar">
