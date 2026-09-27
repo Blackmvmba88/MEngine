@@ -48,8 +48,16 @@ export const buildCatalogReport = (
   tracks: TrackPackage[],
   files: FileCandidate[] = [],
 ): CatalogReport => {
-  const identities = resolveTrackIdentities(files);
-  const byKey = new Map(identities.map((identity) => [identity.key, identity]));
+  const identities = resolveTrackIdentities(
+    files,
+    tracks.map((track) => ({
+      key: track.metadata.title,
+      displayTitle: track.metadata.title,
+    })),
+  );
+  const byKey = new Map(
+    identities.map((identity) => [identity.key, identity]),
+  );
 
   const records = tracks.map((source) => {
     const identity = byKey.get(trackKey(source));
@@ -73,7 +81,9 @@ export const buildCatalogReport = (
     ready: records.filter((record) => record.readyForDistribution),
     blocked: records.filter((record) => !record.readyForDistribution),
     needsReview: records.filter(
-      (record) => record.identity?.confidence === "review" || record.identity?.unresolved.length,
+      (record) =>
+        record.identity?.confidence === "review" ||
+        Boolean(record.identity?.unresolved.length),
     ),
   };
 };
