@@ -110,7 +110,7 @@ export type AutomatorCatalogEvent = {
 export const toAutomatorEvents = (
   record: CatalogRecord,
 ): AutomatorCatalogEvent[] => {
-  const events = record.events.map((event) => ({
+  const events: AutomatorCatalogEvent[] = record.events.map((event) => ({
     kind: event.type,
     project: "music-catalog" as const,
     source: "mengine" as const,
