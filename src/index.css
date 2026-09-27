@@ -1073,3 +1073,58 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+
+.catalog-import-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--bm-border);
+  border-bottom: 1px solid var(--bm-border);
+  padding: 10px 0;
+}
+
+.catalog-import-button {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--bm-border);
+  border-radius: 10px;
+  background: var(--bm-surface);
+  color: var(--bm-text);
+  padding: 9px 11px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.catalog-import-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.catalog-import-stats {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
+  color: var(--bm-muted);
+  font-size: 0.72rem;
+}
+
+.catalog-import-stats strong {
+  color: var(--bm-text);
+}
+
+.catalog-import-hint {
+  color: var(--bm-muted);
+  font-size: 0.75rem;
+}
+
+.catalog-import-error {
+  width: 100%;
+  color: #ff6b6b;
+  font-size: 0.75rem;
+}
