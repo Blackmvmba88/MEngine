@@ -179,6 +179,14 @@ export const rankTracksByVector = (
       (a.ratings.vectors[vector] ?? 0),
   );
 
+export const hasAudienceEvidence = (track: TrackPackage): boolean =>
+  (track.audience.playsLifetime ?? 0) > 0 ||
+  (track.audience.likes ?? 0) > 0 ||
+  (track.audience.comments ?? 0) > 0 ||
+  (track.audience.reposts ?? 0) > 0 ||
+  (track.audience.plays7d ?? 0) > 0 ||
+  (track.audience.plays30d ?? 0) > 0;
+
 export type CatalogRankMetric =
   | "audienceRating"
   | "myRating"
@@ -232,7 +240,9 @@ export const catalogRankValue = (
 ): number => {
   switch (metric) {
     case "audienceRating":
-      return track.ratings.audienceRating ?? scoreAudienceRating(track.ratings.vectors);
+      return hasAudienceEvidence(track)
+        ? track.ratings.audienceRating ?? scoreAudienceRating(track.ratings.vectors)
+        : 0;
     case "myRating":
       return track.ratings.myRating ?? 0;
     case "plays":
@@ -272,8 +282,11 @@ export const formatCatalogRankValue = (
   if (["explosiveness", "momentum", "longevity", "ageAdjustedPerformance", "stylePerformance", "engagement", "popularity", "energy", "danceability", "rhythmicComplexity", "styleStrength", "originality"].includes(metric)) {
     return `${Math.round(value * 100)}%`;
   }
-  if (metric === "audienceRating" || metric === "myRating") {
-    return `${value.toFixed(metric === "myRating" ? 0 : 2)}/5`;
+  if (metric === "audienceRating") {
+    return hasAudienceEvidence(track) ? `${value.toFixed(2)}/5` : "—";
+  }
+  if (metric === "myRating") {
+    return track.ratings.myRating ? `${value.toFixed(0)}/5` : "—";
   }
   if (metric === "age") {
     return `${track.audience.ageDays ?? 0} d`;
