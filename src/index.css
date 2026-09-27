@@ -1187,3 +1187,21 @@ button {
 .source-link:hover {
   text-decoration: underline;
 }
+
+
+.catalog-action-button {
+  border: 1px solid var(--bm-border);
+  border-radius: 10px;
+  background: var(--bm-surface);
+  color: var(--bm-text);
+  padding: 9px 11px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+
+.catalog-action-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
