@@ -36,6 +36,13 @@ export const CAPABILITY_SOURCES: CapabilitySource[] = [
     integration: "native",
   },
   {
+    id: "musica-soundcloud",
+    repo: "Blackmvmba88/MusicaSoundcloud",
+    role: "Canonical player library, verified SoundCloud identity and platform metrics",
+    capabilities: ["canonical library", "localTrackId", "SoundCloud cotejo", "plays", "likes", "comments", "reposts"],
+    integration: "adapter",
+  },
+  {
     id: "suno-suite",
     repo: "Blackmvmba88/suno-suite",
     role: "Catalog, manifests, QA, streaming and distribution preparation",
