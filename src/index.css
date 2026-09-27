@@ -1145,3 +1145,13 @@ button {
 .distribution-status.error {
   color: #ff6b6b;
 }
+
+
+.catalog-track-select {
+  min-width: 220px;
+  border: 1px solid var(--bm-border);
+  border-radius: 10px;
+  background: var(--bm-surface);
+  color: var(--bm-text);
+  padding: 9px 10px;
+}
