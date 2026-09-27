@@ -16,7 +16,17 @@ export type SoundCloudMetricRow = {
 export type SoundCloudMetricMatch = {
   trackId: string;
   soundcloudId: string;
-  confidence: "exact-title" | "review";
+  confidence: "id" | "exact-title" | "review";
+};
+
+export type SoundCloudCotejoMatch = {
+  soundcloudId: string;
+  soundcloudTitle?: string | null;
+  soundcloudUrl?: string | null;
+  localTrackId: string;
+  localTitle?: string | null;
+  durationConfirmed?: boolean;
+  confidence: number;
 };
 
 const ageDays = (createdAt?: string | null, now = new Date()): number | undefined => {
@@ -26,11 +36,49 @@ const ageDays = (createdAt?: string | null, now = new Date()): number | undefine
   return Math.max(1, Math.floor((now.getTime() - created.getTime()) / 86_400_000));
 };
 
+export const applySoundCloudCotejo = (
+  tracks: TrackPackage[],
+  matches: SoundCloudCotejoMatch[],
+  minimumConfidence = 0.98,
+): TrackPackage[] => {
+  const byLocalId = new Map(
+    tracks.map((track) => [track.sources?.localTrackId ?? track.id, track]),
+  );
+
+  const resolved = new Map<string, SoundCloudCotejoMatch>();
+  for (const match of matches) {
+    if (match.confidence < minimumConfidence) continue;
+    if (match.durationConfirmed === false) continue;
+    if (!byLocalId.has(match.localTrackId)) continue;
+    resolved.set(match.localTrackId, match);
+  }
+
+  return tracks.map((track) => {
+    const localId = track.sources?.localTrackId ?? track.id;
+    const match = resolved.get(localId);
+    if (!match) return track;
+    return {
+      ...track,
+      sources: {
+        ...track.sources,
+        localTrackId: match.localTrackId,
+        soundcloudId: match.soundcloudId,
+        soundcloudUrl: match.soundcloudUrl ?? undefined,
+      },
+    };
+  });
+};
+
 export const applySoundCloudMetrics = (
   tracks: TrackPackage[],
   rows: SoundCloudMetricRow[],
   now = new Date(),
 ): { tracks: TrackPackage[]; matches: SoundCloudMetricMatch[]; unmatched: SoundCloudMetricRow[] } => {
+  const bySoundCloudId = new Map(
+    tracks
+      .filter((track) => track.sources?.soundcloudId)
+      .map((track) => [track.sources!.soundcloudId!, track]),
+  );
   const byTitle = new Map<string, TrackPackage[]>();
   for (const track of tracks) {
     const key = normalizeTrackKey(track.metadata.title);
@@ -42,6 +90,17 @@ export const applySoundCloudMetrics = (
   const unmatched: SoundCloudMetricRow[] = [];
 
   for (const row of rows) {
+    const byId = bySoundCloudId.get(row.soundcloudId);
+    if (byId) {
+      rowByTrack.set(byId.id, row);
+      matches.push({
+        trackId: byId.id,
+        soundcloudId: row.soundcloudId,
+        confidence: "id",
+      });
+      continue;
+    }
+
     const key = normalizeTrackKey(row.title ?? "");
     const candidates = byTitle.get(key) ?? [];
     if (candidates.length !== 1) {
