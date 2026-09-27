@@ -124,7 +124,81 @@ export const TrackConsole = ({ onActivity }: Props) => {
     [track, audienceRating],
   );
 
-  const setMetadata = (key: keyof TrackMetadata, value: string | boolean) => {
+  const rebuildCatalog = (tracks: TrackPackage[], files: FileCandidate[]) => {
+    const report = buildCatalogReport(tracks, files);
+    setCatalogReport(report);
+    onActivity?.(
+      "CATALOG SCAN",
+      `${report.tracks.length} tracks · ${report.ready.length} ready · ${report.blocked.length} blocked · ${report.needsReview.length} review`,
+    );
+  };
+
+  const importCatalog = async (file: File | undefined) => {
+    if (!file) return;
+    setImportError(null);
+    try {
+      const parsed = JSON.parse(await file.text()) as unknown;
+      const defaults = {
+        artist: track.metadata.artist,
+        label: track.metadata.label,
+        composer: track.metadata.composer,
+        producer: track.metadata.producer,
+      };
+
+      let tracks: TrackPackage[];
+      let source: string;
+
+      if (Array.isArray(parsed)) {
+        tracks = tracksFromSunoManifest(parsed as SunoManifestRow[], {
+          ...defaults,
+          style: track.metadata.style,
+          motto: track.metadata.motto,
+        });
+        source = "SUNO MANIFEST";
+      } else if (
+        parsed &&
+        typeof parsed === "object" &&
+        Array.isArray((parsed as CanonicalLibrary).tracks)
+      ) {
+        tracks = tracksFromCanonicalLibrary(parsed as CanonicalLibrary, defaults);
+        source = "CANONICAL LIBRARY";
+      } else {
+        throw new Error("Unsupported catalog JSON: expected Suno array or { tracks: [...] }");
+      }
+
+      setCatalogSource(source);
+      setCatalogTracks(tracks);
+      rebuildCatalog(tracks, assetCandidates);
+      onActivity?.("CATALOG IMPORT", `${source} · ${tracks.length} tracks`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Catalog import failed";
+      setImportError(message);
+      onActivity?.("CATALOG ERROR", message);
+    }
+  };
+
+  const scanAssets = (files: FileList | null) => {
+    if (!files?.length) return;
+    const candidates: FileCandidate[] = Array.from(files).map((file) => ({
+      name: file.name,
+      path: file.webkitRelativePath || file.name,
+      mimeType: file.type || undefined,
+    }));
+    setAssetCandidates(candidates);
+    if (catalogTracks.length) {
+      rebuildCatalog(catalogTracks, candidates);
+    } else {
+      onActivity?.(
+        "ASSET SCAN",
+        `${candidates.length} files indexed; import a catalog to build track packages`,
+      );
+    }
+  };
+
+  const setMetadata = <K extends keyof TrackMetadata>(
+    key: K,
+    value: TrackMetadata[K],
+  ) => {
     setTrack((current) => ({
       ...current,
       metadata: { ...current.metadata, [key]: value },
