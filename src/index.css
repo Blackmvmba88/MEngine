@@ -1128,3 +1128,20 @@ button {
   color: #ff6b6b;
   font-size: 0.75rem;
 }
+
+
+.distribution-status {
+  margin-top: 8px;
+  max-width: 290px;
+  font-size: 0.72rem;
+  text-align: right;
+  color: var(--bm-muted);
+}
+
+.distribution-status.queued {
+  color: #43d17a;
+}
+
+.distribution-status.error {
+  color: #ff6b6b;
+}
