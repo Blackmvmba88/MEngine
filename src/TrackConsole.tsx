@@ -11,7 +11,7 @@ import { tracksFromSunoManifest, type SunoManifestRow } from "./adapters/sunoSui
 import { tracksFromCanonicalLibrary, type CanonicalLibrary } from "./adapters/canonicalLibrary";
 import type { FileCandidate } from "./identityResolver";
 import { handoffDistribution } from "./distribution";
-import { applyAudienceVectors } from "./catalogAnalytics";
+import { applyAudienceVectors, CATALOG_RANK_LABELS, formatCatalogRankValue, rankTracks, type CatalogRankMetric } from "./catalogAnalytics";
 import { applySoundCloudCotejo, applySoundCloudMetrics, type SoundCloudCotejoMatch, type SoundCloudMetricRow } from "./adapters/soundcloud";
 
 type Props = {
@@ -72,6 +72,7 @@ export const TrackConsole = ({ onActivity }: Props) => {
   const [catalogReport, setCatalogReport] = useState<CatalogReport | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [catalogSource, setCatalogSource] = useState<string>("");
+  const [rankMetric, setRankMetric] = useState<CatalogRankMetric>("explosiveness");
   const [distributionState, setDistributionState] = useState<"idle" | "sending" | "queued" | "error">("idle");
   const [distributionDetail, setDistributionDetail] = useState<string>("");
 
@@ -87,6 +88,15 @@ export const TrackConsole = ({ onActivity }: Props) => {
         ratings: { ...track.ratings, audienceRating },
       }),
     [track, audienceRating],
+  );
+
+  const rankedCatalogTracks = useMemo(
+    () =>
+      rankTracks(
+        catalogReport?.tracks.map((record) => record.track) ?? [],
+        rankMetric,
+      ),
+    [catalogReport, rankMetric],
   );
 
   const rebuildCatalog = (tracks: TrackPackage[], files: FileCandidate[]) => {
@@ -301,6 +311,16 @@ export const TrackConsole = ({ onActivity }: Props) => {
           <span className="eyebrow">CATALOG / CURRENT TRACK</span>
           <h2>{track.metadata.title}</h2>
           <p>{track.metadata.artist} · {track.metadata.genre} · {track.metadata.style}</p>
+          {track.sources?.soundcloudUrl ? (
+            <a
+              className="source-link"
+              href={track.sources.soundcloudUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              SOUNDCLOUD · LINKED
+            </a>
+          ) : null}
         </div>
         <button
           className={`distribute-button ${gate.ready ? "ready" : ""}`}
@@ -362,23 +382,48 @@ export const TrackConsole = ({ onActivity }: Props) => {
           <span className="catalog-import-hint">Manifest + assets → identity → missing state → gate</span>
         )}
         {catalogReport?.tracks.length ? (
-          <select
-            className="catalog-track-select"
-            value={
-              catalogReport.tracks.some((record) => record.track.id === track.id)
-                ? track.id
-                : catalogReport.tracks[0].track.id
-            }
-            onChange={(event) => selectCatalogTrack(event.target.value)}
-            aria-label="Select catalog track"
-          >
-            {catalogReport.tracks.map((record) => (
-              <option value={record.track.id} key={record.track.id}>
-                {record.track.metadata.title}
-                {record.readyForDistribution ? " · READY" : " · INCOMPLETE"}
-              </option>
-            ))}
-          </select>
+          <>
+            <label className="rank-control">
+              <span>RANK BY</span>
+              <select
+                value={rankMetric}
+                onChange={(event) =>
+                  setRankMetric(event.target.value as CatalogRankMetric)
+                }
+              >
+                {(Object.keys(CATALOG_RANK_LABELS) as CatalogRankMetric[]).map(
+                  (metric) => (
+                    <option value={metric} key={metric}>
+                      {CATALOG_RANK_LABELS[metric]}
+                    </option>
+                  ),
+                )}
+              </select>
+            </label>
+            <select
+              className="catalog-track-select"
+              value={
+                rankedCatalogTracks.some((item) => item.id === track.id)
+                  ? track.id
+                  : rankedCatalogTracks[0]?.id
+              }
+              onChange={(event) => selectCatalogTrack(event.target.value)}
+              aria-label="Select catalog track"
+            >
+              {rankedCatalogTracks.map((item, index) => {
+                const record = catalogReport.tracks.find(
+                  (candidate) => candidate.track.id === item.id,
+                );
+                return (
+                  <option value={item.id} key={item.id}>
+                    #{index + 1} · {item.metadata.title} ·{" "}
+                    {formatCatalogRankValue(item, rankMetric)}
+                    {record?.readyForDistribution ? " · READY" : " · INCOMPLETE"}
+                  </option>
+                );
+              })}
+            </select>
+          </>
         ) : null}
         {importError ? <span className="catalog-import-error">{importError}</span> : null}
       </div>
@@ -445,7 +490,11 @@ export const TrackConsole = ({ onActivity }: Props) => {
             <div><span>EXPLOSIVENESS</span><strong>{clampPercent(track.ratings.vectors.explosiveness)}</strong><small>audience vector</small></div>
             <div><span>MOMENTUM</span><strong>{clampPercent(track.ratings.vectors.momentum)}</strong><small>recent growth</small></div>
             <div><span>STYLE</span><strong>{clampPercent(track.ratings.vectors.styleStrength)}</strong><small>style strength</small></div>
-            <div><span>LONGEVITY</span><strong>{clampPercent(track.ratings.vectors.longevity)}</strong><small>age-adjusted</small></div>
+            <div><span>LONGEVITY</span><strong>{clampPercent(track.ratings.vectors.longevity)}</strong><small>sustained response</small></div>
+            <div><span>LIKES</span><strong>{formatNumber(track.audience.likes)}</strong><small>{clampPercent(track.ratings.vectors.likesStrength)} percentile</small></div>
+            <div><span>AGE</span><strong>{track.audience.ageDays ?? "—"} d</strong><small>release age</small></div>
+            <div><span>AGE-ADJUSTED</span><strong>{clampPercent(track.ratings.vectors.ageAdjustedPerformance)}</strong><small>performance vs age</small></div>
+            <div><span>STYLE PERFORMANCE</span><strong>{clampPercent(track.ratings.vectors.stylePerformance)}</strong><small>within same style</small></div>
           </div>
         </div>
       )}
