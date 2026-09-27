@@ -1155,3 +1155,35 @@ button {
   color: var(--bm-text);
   padding: 9px 10px;
 }
+
+
+.rank-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--bm-muted);
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+}
+
+.rank-control select {
+  border: 1px solid var(--bm-border);
+  border-radius: 9px;
+  background: var(--bm-surface);
+  color: var(--bm-text);
+  padding: 8px 9px;
+}
+
+.source-link {
+  display: inline-block;
+  margin-top: 6px;
+  color: var(--bm-accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-decoration: none;
+}
+
+.source-link:hover {
+  text-decoration: underline;
+}
