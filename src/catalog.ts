@@ -73,6 +73,12 @@ export type RatingVectors = {
   popularity?: number;
   engagement?: number;
   momentum?: number;
+  age?: number;
+  ageAdjustedPerformance?: number;
+  stylePerformance?: number;
+  likesStrength?: number;
+  commentsStrength?: number;
+  repostsStrength?: number;
   energy?: number;
   styleStrength?: number;
   originality?: number;
