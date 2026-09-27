@@ -147,6 +147,14 @@ export const TrackConsole = ({ onActivity }: Props) => {
       } else if (
         parsed &&
         typeof parsed === "object" &&
+        (parsed as { schema?: string }).schema === "blackmamba.mengine.catalog.v1" &&
+        Array.isArray((parsed as { tracks?: unknown[] }).tracks)
+      ) {
+        tracks = (parsed as { tracks: TrackPackage[] }).tracks;
+        source = "MENGINE CATALOG";
+      } else if (
+        parsed &&
+        typeof parsed === "object" &&
         Array.isArray((parsed as CanonicalLibrary).tracks)
       ) {
         tracks = tracksFromCanonicalLibrary(parsed as CanonicalLibrary, defaults);
@@ -166,13 +174,32 @@ export const TrackConsole = ({ onActivity }: Props) => {
     }
   };
 
-  const scanAssets = (files: FileList | null) => {
+  const scanAssets = async (files: FileList | null) => {
     if (!files?.length) return;
-    const candidates: FileCandidate[] = Array.from(files).map((file) => ({
-      name: file.name,
-      path: file.webkitRelativePath || file.name,
-      mimeType: file.type || undefined,
-    }));
+
+    const candidates = await Promise.all(
+      Array.from(files).map(async (file): Promise<FileCandidate> => {
+        const candidate: FileCandidate = {
+          name: file.name,
+          path: file.webkitRelativePath || file.name,
+          mimeType: file.type || undefined,
+        };
+
+        if (file.type.startsWith("image/") && "createImageBitmap" in window) {
+          try {
+            const bitmap = await createImageBitmap(file);
+            candidate.width = bitmap.width;
+            candidate.height = bitmap.height;
+            bitmap.close();
+          } catch {
+            // Filename classification remains available as a safe fallback.
+          }
+        }
+
+        return candidate;
+      }),
+    );
+
     setAssetCandidates(candidates);
     if (catalogTracks.length) {
       rebuildCatalog(catalogTracks, candidates);
@@ -406,7 +433,7 @@ export const TrackConsole = ({ onActivity }: Props) => {
             type="file"
             multiple
             accept="audio/*,image/*,video/*,.lrc,.txt,.srt,.vtt"
-            onChange={(event) => scanAssets(event.target.files)}
+            onChange={(event) => void scanAssets(event.target.files)}
           />
         </label>
         {catalogReport ? (
